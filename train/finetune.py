@@ -79,7 +79,7 @@ def main():
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
         torch_dtype=torch.bfloat16,
-        attn_implementation="flash_attention_2",
+        attn_implementation="sdpa",
     )
 
     lora_config = LoraConfig(
