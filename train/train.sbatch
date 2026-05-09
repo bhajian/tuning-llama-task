@@ -21,7 +21,8 @@ mkdir -p /mnt/data/logs
 srun --container-image=nvcr.io/nvidia/pytorch:24.07-py3 \
      --container-mounts=/mnt/data:/mnt/data,/root:/root \
      bash -c "
-        pip install -q -r /root/training-task/train/requirements.txt && \
+        pip install -q --no-deps transformers peft && \
+        pip install -q datasets sentencepiece protobuf safetensors tokenizers huggingface_hub accelerate && \
         torchrun \
             --nnodes=\$SLURM_NNODES \
             --nproc_per_node=1 \
