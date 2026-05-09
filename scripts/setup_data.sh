@@ -15,10 +15,10 @@ if [ -z "${HF_TOKEN:-}" ]; then
     exit 1
 fi
 
-pip install -q huggingface_hub datasets transformers sentencepiece protobuf
+pip install -q --break-system-packages huggingface_hub datasets transformers sentencepiece protobuf
 
 echo "==> Downloading model: $MODEL_ID"
-python -c "
+python3 -c "
 from huggingface_hub import snapshot_download
 snapshot_download(
     '$MODEL_ID',
@@ -29,7 +29,7 @@ print('Model downloaded.')
 "
 
 echo "==> Pre-caching Alpaca dataset"
-python -c "
+python3 -c "
 from datasets import load_dataset
 ds = load_dataset('tatsu-lab/alpaca', split='train')
 print(f'Dataset cached: {len(ds)} examples')
