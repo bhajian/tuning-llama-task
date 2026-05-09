@@ -95,7 +95,6 @@ def main():
 
     model = model.to(device)
     model = DDP(model, device_ids=[local_rank])
-    model = torch.compile(model)
 
     if global_rank == 0:
         print("Loading and tokenizing dataset...")
@@ -152,8 +151,6 @@ def main():
     if global_rank == 0:
         print(f"Saving adapter to {OUTPUT_DIR}")
         unwrapped = model.module
-        if hasattr(unwrapped, "_orig_mod"):
-            unwrapped = unwrapped._orig_mod
         unwrapped.save_pretrained(OUTPUT_DIR)
         tokenizer.save_pretrained(OUTPUT_DIR)
         print("Done.")
