@@ -19,14 +19,14 @@ export NCCL_DEBUG=INFO
 mkdir -p /mnt/data/logs
 
 srun --container-image=nvcr.io/nvidia/pytorch:24.07-py3 \
-     --container-mounts=/mnt/data:/mnt/data,/home:/home \
+     --container-mounts=/mnt/data:/mnt/data,/root:/root \
      bash -c "
-        pip install -q -r /home/\$USER/training-task/train/requirements.txt && \
+        pip install -q -r /root/training-task/train/requirements.txt && \
         torchrun \
             --nnodes=\$SLURM_NNODES \
             --nproc_per_node=1 \
             --node_rank=\$SLURM_NODEID \
             --master_addr=$MASTER_ADDR \
             --master_port=$MASTER_PORT \
-            /home/\$USER/training-task/train/finetune.py
+            /root/training-task/train/finetune.py
     "
