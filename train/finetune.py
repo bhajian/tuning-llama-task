@@ -18,7 +18,7 @@ from datasets import load_dataset
 MODEL_ID = "/mnt/data/Llama-3.1-8B"
 OUTPUT_DIR = "/mnt/data/llama-3.1-8b-lora-adapter"
 MAX_SEQ_LEN = 2048
-BATCH_SIZE = 4
+BATCH_SIZE = 2
 EPOCHS = 3
 LR = 2e-4
 WARMUP_RATIO = 0.03
@@ -90,6 +90,8 @@ def main():
         target_modules=LORA_TARGETS,
     )
     model = get_peft_model(model, lora_config)
+    model.enable_input_require_grads()
+    model.gradient_checkpointing_enable()
     if global_rank == 0:
         model.print_trainable_parameters()
 

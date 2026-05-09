@@ -15,6 +15,7 @@ MASTER_PORT=29500
 export NCCL_IB_DISABLE=1
 export NCCL_SOCKET_IFNAME=eth0
 export NCCL_DEBUG=INFO
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 mkdir -p /mnt/data/logs
 
