@@ -21,8 +21,8 @@ mkdir -p /mnt/data/logs
 srun --container-image=nvcr.io/nvidia/pytorch:24.07-py3 \
      --container-mounts=/mnt/data:/mnt/data,/root:/root \
      bash -c "
-        pip install -q --no-deps 'peft==0.12.0' && \
-        pip install -q 'datasets' 'huggingface-hub<1.0' sentencepiece protobuf accelerate safetensors && \
+        pip install -q --no-deps 'transformers==4.44.2' 'peft==0.12.0' 'accelerate==0.33.0' && \
+        pip install -q 'huggingface-hub==0.24.0' 'tokenizers==0.19.1' 'safetensors==0.4.3' datasets sentencepiece protobuf && \
         torchrun \
             --nnodes=\$SLURM_NNODES \
             --nproc_per_node=1 \
