@@ -2,7 +2,6 @@
 """LoRA fine-tuning of Llama 3.1 8B with DDP over Ethernet."""
 
 import os
-import math
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -16,7 +15,7 @@ from peft import LoraConfig, get_peft_model, TaskType
 from datasets import load_dataset
 
 
-MODEL_ID = "meta-llama/Llama-3.1-8B"
+MODEL_ID = "/mnt/data/Llama-3.1-8B"
 OUTPUT_DIR = "/mnt/data/llama-3.1-8b-lora-adapter"
 MAX_SEQ_LEN = 2048
 BATCH_SIZE = 4
@@ -95,8 +94,8 @@ def main():
         model.print_trainable_parameters()
 
     model = model.to(device)
-    model = torch.compile(model)
     model = DDP(model, device_ids=[local_rank])
+    model = torch.compile(model)
 
     if global_rank == 0:
         print("Loading and tokenizing dataset...")

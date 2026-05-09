@@ -14,9 +14,6 @@ PROMPTS = [
     "Give me a recipe for a simple pasta dish.",
 ]
 
-BASE_URL = "http://{base_host}:{base_port}/v1/completions"
-LORA_URL = "http://{lora_host}:{lora_port}/v1/completions"
-
 
 def query_model(url, prompt, model_name, max_tokens=256):
     payload = json.dumps({
@@ -60,7 +57,7 @@ def main():
         print("\n[BASE MODEL]")
         try:
             base_text, base_time, base_tokens = query_model(
-                base_url, prompt, "meta-llama/Llama-3.1-8B"
+                base_url, prompt, "/mnt/data/Llama-3.1-8B"
             )
             print(base_text)
             print(f"\n  ⏱ {base_time:.2f}s | {base_tokens} tokens | {base_tokens/base_time:.1f} tok/s")
@@ -70,7 +67,7 @@ def main():
         print("\n[FINE-TUNED MODEL (LoRA)]")
         try:
             lora_text, lora_time, lora_tokens = query_model(
-                lora_url, prompt, "meta-llama/Llama-3.1-8B"
+                lora_url, prompt, "lora-adapter"
             )
             print(lora_text)
             print(f"\n  ⏱ {lora_time:.2f}s | {lora_tokens} tokens | {lora_tokens/lora_time:.1f} tok/s")

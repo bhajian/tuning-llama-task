@@ -17,7 +17,7 @@ srun --container-image=nvcr.io/nvidia/pytorch:24.07-py3 \
      bash -c "
         pip install -q vllm && \
         python -m vllm.entrypoints.openai.api_server \
-            --model meta-llama/Llama-3.1-8B \
+            --model /mnt/data/Llama-3.1-8B \
             --dtype bfloat16 \
             --host 0.0.0.0 \
             --port 8001 \

@@ -14,7 +14,6 @@ MASTER_PORT=29500
 
 export NCCL_IB_DISABLE=1
 export NCCL_SOCKET_IFNAME=eth0
-export NCCL_P2P_DISABLE=1
 export NCCL_DEBUG=INFO
 
 mkdir -p /mnt/data/logs
