@@ -10,17 +10,20 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 SOPERATOR_NS="soperator"
 INFERENCE_NS="inference"
-HELMRELEASE="flux-system-soperator-fluxcd-slurm-cluster"
 
-echo "==> Suspending FluxCD reconciliation (prevents workers from respawning)"
-kubectl patch helmrelease "$HELMRELEASE" -n flux-system \
+echo "==> Suspending FluxCD reconciliation"
+kubectl patch helmrelease flux-system-soperator-fluxcd-slurm-cluster -n flux-system \
+    --type merge -p '{"spec":{"suspend":true}}'
+kubectl patch helmrelease flux-system-soperator-fluxcd-nodesets -n flux-system \
     --type merge -p '{"spec":{"suspend":true}}'
 
-echo "==> Scaling down Soperator workers to free GPUs"
-kubectl scale statefulsets.apps.kruise.io worker -n "$SOPERATOR_NS" --replicas=0
+echo "==> Scaling NodeSet to 0 (releases GPUs from Soperator workers)"
+kubectl patch nodeset worker -n "$SOPERATOR_NS" \
+    --type merge -p '{"spec":{"replicas":0}}'
 
 echo "==> Waiting for worker pods to terminate..."
-kubectl wait --for=delete pod/worker-0 pod/worker-1 -n "$SOPERATOR_NS" --timeout=120s 2>/dev/null || true
+while kubectl get pod worker-0 -n "$SOPERATOR_NS" &>/dev/null; do sleep 2; done
+echo "    Workers terminated."
 
 echo "==> Verifying GPUs are available"
 GPU_COUNT=$(kubectl get nodes -o jsonpath='{range .items[*]}{.status.allocatable.nvidia\.com/gpu}{"\n"}{end}' | awk '{s+=$1} END{print s}')

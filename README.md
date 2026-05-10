@@ -11,40 +11,43 @@ Fine-tune Llama 3.1 8B with LoRA across 2 nodes (1x L40s each) over Ethernet, th
 
 ## Important: GPU Ownership
 
-The Soperator worker pods (`worker-0`, `worker-1`) each request `nvidia.com/gpu: 1`. This means the GPUs are **occupied at the Kubernetes level** even when no Slurm job is running. Training and inference cannot share GPUs simultaneously — you must switch between modes:
+The Soperator worker pods (`worker-0`, `worker-1`) each request `nvidia.com/gpu: 1`. GPUs are **occupied at the Kubernetes level** even when no Slurm job is running. Training and inference cannot share GPUs simultaneously — you must switch between modes:
 
 - **Training mode**: Soperator workers running (GPUs allocated to Slurm)
 - **Inference mode**: Soperator workers scaled down (GPUs available for vLLM deployments)
 
-FluxCD manages the Soperator HelmRelease and will reconcile workers back to 2 replicas unless suspended.
+The reconciliation chain is: FluxCD HelmRelease (`nodesets`) → NodeSet CRD → slurm-operator → Kruise StatefulSet → worker pods. To stop workers, you must suspend FluxCD **and** patch the NodeSet CRD. Scaling the StatefulSet alone gets overridden by the slurm-operator.
 
 ---
 
 ## Training
 
-### Ensure Soperator workers are running
+### Step 1: Ensure Soperator workers are running
 
 If you previously scaled down workers for inference, restore them:
 
 ```bash
+# Restore NodeSet replicas to 2
+kubectl patch nodeset worker -n soperator \
+    --type merge -p '{"spec":{"replicas":2}}'
+
 # Resume FluxCD reconciliation
+kubectl patch helmrelease flux-system-soperator-fluxcd-nodesets -n flux-system \
+    --type merge -p '{"spec":{"suspend":false}}'
 kubectl patch helmrelease flux-system-soperator-fluxcd-slurm-cluster -n flux-system \
     --type merge -p '{"spec":{"suspend":false}}'
-
-# Scale workers back up
-kubectl scale statefulsets.apps.kruise.io worker -n soperator --replicas=2
 
 # Wait for workers to be ready
 kubectl wait --for=condition=ready pod/worker-0 pod/worker-1 -n soperator --timeout=300s
 ```
 
-Verify Slurm sees both nodes:
+### Step 2: Verify Slurm is ready
 
 ```bash
 kubectl exec -n soperator login-0 -- sinfo
 ```
 
-Expected output:
+Expected:
 
 ```
 PARTITION AVAIL  TIMELIMIT  NODES  STATE NODELIST
@@ -123,21 +126,24 @@ Inference runs as Kubernetes Deployments with LoadBalancer services in a dedicat
 
 ### Step 1: Suspend FluxCD and scale down Soperator workers
 
-FluxCD will reconcile workers back to 2 replicas unless suspended first:
+Both FluxCD HelmReleases must be suspended to prevent the slurm-operator from respawning workers:
 
 ```bash
-# Suspend FluxCD so it doesn't respawn workers
+# Suspend FluxCD (both slurm-cluster and nodesets)
 kubectl patch helmrelease flux-system-soperator-fluxcd-slurm-cluster -n flux-system \
     --type merge -p '{"spec":{"suspend":true}}'
+kubectl patch helmrelease flux-system-soperator-fluxcd-nodesets -n flux-system \
+    --type merge -p '{"spec":{"suspend":true}}'
 
-# Scale workers to 0
-kubectl scale statefulsets.apps.kruise.io worker -n soperator --replicas=0
+# Scale NodeSet to 0 (this is what the slurm-operator watches)
+kubectl patch nodeset worker -n soperator \
+    --type merge -p '{"spec":{"replicas":0}}'
 ```
 
-### Step 2: Verify GPUs are free
+### Step 2: Verify workers are gone and GPUs are free
 
 ```bash
-# Confirm no worker pods (should return nothing)
+# Should return nothing
 kubectl get pods -n soperator | grep worker
 
 # Both GPU nodes should show 1 available GPU
@@ -152,14 +158,14 @@ computeinstance-e00n8wvvx88swma9h1   1
 computeinstance-e00x76mf85g7tbcfx9   1
 ```
 
-Confirm no GPU resources are allocated:
+Confirm GPUs are not allocated:
 
 ```bash
-kubectl describe node computeinstance-e00n8wvvx88swma9h1 | grep 'nvidia.com/gpu'
-kubectl describe node computeinstance-e00x76mf85g7tbcfx9 | grep 'nvidia.com/gpu'
+kubectl describe node computeinstance-e00n8wvvx88swma9h1 | grep -A5 'Allocated resources'
+kubectl describe node computeinstance-e00x76mf85g7tbcfx9 | grep -A5 'Allocated resources'
 ```
 
-Both should show `0` under Requests/Limits in the Allocated resources section.
+`nvidia.com/gpu` should show `0` for both Requests and Limits.
 
 ### Step 3: NVIDIA smoke test on Kubernetes
 
@@ -248,14 +254,21 @@ curl -s http://$LORA_IP:8000/v1/completions \
 Or manually:
 
 ```bash
+# Remove vLLM deployments
 kubectl delete -f inference/k8s/lora-model.yaml
 kubectl delete -f inference/k8s/base-model.yaml
 
-kubectl scale statefulsets.apps.kruise.io worker -n soperator --replicas=2
+# Restore NodeSet replicas
+kubectl patch nodeset worker -n soperator \
+    --type merge -p '{"spec":{"replicas":2}}'
 
+# Resume FluxCD
+kubectl patch helmrelease flux-system-soperator-fluxcd-nodesets -n flux-system \
+    --type merge -p '{"spec":{"suspend":false}}'
 kubectl patch helmrelease flux-system-soperator-fluxcd-slurm-cluster -n flux-system \
     --type merge -p '{"spec":{"suspend":false}}'
 
+# Wait for workers
 kubectl wait --for=condition=ready pod/worker-0 pod/worker-1 -n soperator --timeout=300s
 ```
 
