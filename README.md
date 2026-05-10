@@ -278,13 +278,23 @@ kubectl wait --for=condition=ready pod/worker-0 pod/worker-1 -n soperator --time
 
 Evaluates both models on 1000 Alpaca samples using GPT-4o as an impartial judge. Run this while the inference servers are up.
 
-### Install dependencies (laptop)
+### Jupyter Notebook (recommended)
 
 ```bash
-pip install openai datasets
+pip install openai datasets matplotlib seaborn pandas jupyter
+OPENAI_API_KEY=sk-xxx jupyter notebook inference/evaluation.ipynb
 ```
 
-### Run evaluation
+The notebook walks through:
+1. Load and sample 1000 Alpaca examples
+2. Query both models via their K8s API endpoints
+3. GPT-4o judges each response (binary YES/NO)
+4. Save all results to `results/`
+5. Accuracy bar chart + per-sample agreement breakdown
+6. Confusion matrix (base vs LoRA correctness)
+7. Throughput analysis (tokens/sec, latency distributions, p95)
+
+### CLI alternative
 
 ```bash
 OPENAI_API_KEY=sk-xxx python inference/evaluate.py \
@@ -292,8 +302,6 @@ OPENAI_API_KEY=sk-xxx python inference/evaluate.py \
     --lora-url http://$LORA_IP:8000 \
     --samples 1000
 ```
-
-Output: per-model accuracy (binary YES/NO from GPT-4o judge), improvement delta, and detailed results in `eval_results.json`.
 
 ---
 
