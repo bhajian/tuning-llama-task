@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-lora
+  namespace: soperator
+  labels:
+    app: vllm-lora
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-lora
+  template:
+    metadata:
+      labels:
+        app: vllm-lora
+    spec:
+      nodeSelector:
+        nebius.com/gpu: "true"
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.6.6.post1
+          args:
+            - --model
+            - /mnt/data/Llama-3.1-8B
+            - --dtype
+            - bfloat16
+            - --host
+            - "0.0.0.0"
+            - --port
+            - "8000"
+            - --max-model-len
+            - "2048"
+            - --enable-lora
+            - --lora-modules
+            - lora-adapter=/mnt/data/llama-3.1-8b-lora-adapter
+          ports:
+            - containerPort: 8000
+              name: http
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
+              cpu: "8"
+              memory: "48Gi"
+            requests:
+              nvidia.com/gpu: "1"
+              cpu: "4"
+              memory: "32Gi"
+          volumeMounts:
+            - name: data
+              mountPath: /mnt/data
+              subPath: mnt/data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 120
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 180
+            periodSeconds: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: jail-submount-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm-lora
+  namespace: soperator
+spec:
+  type: LoadBalancer
+  selector:
+    app: vllm-lora
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http

@@ -84,34 +84,61 @@ This syncs the code to the login pod, runs `setup_env.sh`, and submits the train
 
 ---
 
-## Inference (after training completes)
+## Inference (Kubernetes Deployments)
 
-The adapter saves to `/mnt/data/llama-3.1-8b-lora-adapter/`.
+After training completes, the LoRA adapter is saved to `/mnt/data/llama-3.1-8b-lora-adapter/`.
 
-### Start vLLM servers
+Inference runs as Kubernetes Deployments with LoadBalancer services — no Slurm needed. The script scales down Soperator workers to free GPUs, then deploys vLLM containers.
 
-```bash
-sbatch ~/training-task/inference/serve_base.sbatch   # port 8000
-sbatch ~/training-task/inference/serve_lora.sbatch    # port 8001
-```
-
-Wait for both servers to be ready (check logs), then note the node names:
+### Deploy serving
 
 ```bash
-squeue
+./scripts/serve_k8s.sh
 ```
 
-### Run comparison
+This will:
+1. Scale down Soperator workers (frees both GPUs)
+2. Deploy vLLM base model server (1 GPU)
+3. Deploy vLLM LoRA model server (1 GPU)
+4. Create LoadBalancer services and print the endpoint IPs
+
+### Verify
 
 ```bash
-BASE_HOST=worker-0 LORA_HOST=worker-1 sbatch ~/training-task/inference/compare.sbatch
+curl -s http://<BASE_IP>:8000/v1/models | python3 -m json.tool
+curl -s http://<LORA_IP>:8000/v1/models | python3 -m json.tool
 ```
 
-Or directly:
+### Teardown and restore Slurm
 
 ```bash
-python ~/training-task/inference/compare.py --base-host worker-0 --lora-host worker-1
+./scripts/teardown_k8s.sh
 ```
+
+Removes vLLM deployments, restores Soperator workers to 2 replicas.
+
+---
+
+## Evaluation (GPT-4o as Judge)
+
+Evaluates both models on 1000 Alpaca samples using GPT-4o as an impartial judge.
+
+### Install dependencies (laptop)
+
+```bash
+pip install openai datasets
+```
+
+### Run evaluation
+
+```bash
+OPENAI_API_KEY=sk-xxx python inference/evaluate.py \
+    --base-url http://<BASE_IP>:8000 \
+    --lora-url http://<LORA_IP>:8000 \
+    --samples 1000
+```
+
+Output: per-model accuracy (binary YES/NO from GPT-4o judge), improvement delta, and detailed results in `eval_results.json`.
 
 ---
 
@@ -119,11 +146,20 @@ python ~/training-task/inference/compare.py --base-host worker-0 --lora-host wor
 
 ```
 2 Nodes (1x L40s each, Ethernet)
-├── Training: torchrun DDP, NCCL over TCP
-│   ├── LoRA (r=16, alpha=32) on q/k/v/o projections
-│   ├── BF16 + SDPA attention
-│   └── Sequence packing (2048 ctx, no padding waste)
-└── Inference: vLLM OpenAI-compatible API
-    ├── Node A: base Llama 3.1 8B
-    └── Node B: base + LoRA adapter
+
+Training:
+  torchrun DDP, NCCL over TCP
+  ├── LoRA (r=16, alpha=32) on q/k/v/o projections
+  ├── BF16 + SDPA attention
+  ├── Gradient checkpointing
+  └── Sequence packing (2048 ctx, no padding waste)
+
+Inference:
+  vLLM on Kubernetes (OpenAI-compatible API)
+  ├── Deployment A: base Llama 3.1 8B (LoadBalancer)
+  └── Deployment B: base + LoRA adapter (LoadBalancer)
+
+Evaluation:
+  GPT-4o judge on 1000 Alpaca samples
+  └── Binary accuracy scoring (base vs fine-tuned)
 ```
