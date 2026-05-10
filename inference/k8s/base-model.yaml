@@ -23,7 +23,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: vllm
-          image: vllm/vllm-openai:v0.6.6.post1
+          image: vllm/vllm-openai:v0.20.2
           args:
             - --model
             - /mnt/data/Llama-3.1-8B
@@ -65,7 +65,7 @@ spec:
       volumes:
         - name: data
           hostPath:
-            path: /mnt/jail-submount-data/mnt/data
+            path: /mnt/jail-submount-data
             type: Directory
 ---
 apiVersion: v1
