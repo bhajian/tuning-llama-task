@@ -295,7 +295,7 @@ After training, we transition from Slurm to native Kubernetes for serving:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Kubernetes (soperator namespace)              │
+│                    Kubernetes (inference namespace)              │
 │                                                                 │
 │  ┌────────────────────────┐    ┌────────────────────────┐       │
 │  │  Deployment: vllm-base │    │  Deployment: vllm-lora │       │
@@ -322,18 +322,19 @@ After training, we transition from Slurm to native Kubernetes for serving:
 
 ### Slurm → Kubernetes Transition
 
-The serving workflow requires freeing GPUs from Soperator workers:
+The serving workflow requires freeing GPUs from Soperator workers. The reconciliation chain is: FluxCD HelmRelease → NodeSet CRD → slurm-operator → Kruise StatefulSet → worker pods. To release GPUs:
 
-1. **Scale down workers**: `kubectl scale statefulsets.apps.kruise.io worker --replicas=0` releases both GPUs
-2. **Deploy vLLM**: Kubernetes Deployments with `nvidia.com/gpu: 1` resource requests claim the freed GPUs
-3. **Expose via LoadBalancer**: Each deployment gets an external IP via Nebius LoadBalancer
-4. **Restore**: Delete deployments, scale workers back to 2 to resume Slurm capability
+1. **Suspend FluxCD**: Suspend both `slurm-cluster` and `nodesets` HelmReleases to prevent the operator from respawning workers
+2. **Scale down NodeSet**: `kubectl patch nodeset worker -n soperator --type merge -p '{"spec":{"replicas":0}}'` — this is what the slurm-operator watches
+3. **Deploy vLLM**: Kubernetes Deployments in the `inference` namespace with `nvidia.com/gpu: 1` resource requests claim the freed GPUs
+4. **Expose via LoadBalancer**: Each deployment gets an external IP via Nebius LoadBalancer
+5. **Restore**: Delete deployments, restore NodeSet replicas to 2, resume both FluxCD HelmReleases
 
 ### vLLM Serving Configuration
 
 | Parameter | Base Server | LoRA Server |
 |-----------|-------------|-------------|
-| Image | `vllm/vllm-openai:v0.6.6.post1` | Same |
+| Image | `vllm/vllm-openai:v0.20.2` | Same |
 | Model | `/mnt/data/Llama-3.1-8B` | `/mnt/data/Llama-3.1-8B` |
 | LoRA | — | `/mnt/data/llama-3.1-8b-lora-adapter` |
 | Precision | BF16 | BF16 |
@@ -477,7 +478,7 @@ scancel <jobid>
 | Transformers | 4.44.2 |
 | PEFT | 0.12.0 |
 | Accelerate | 0.33.0 |
-| vLLM | 0.6.6.post1 |
+| vLLM | 0.20.2 |
 | FluxCD | HelmRelease v2 |
 | OpenKruise | 1.8.0 |
 | cert-manager | 1.19.5 |
