@@ -50,6 +50,15 @@ def load_config(args):
         if val is not None:
             cfg[key] = val
 
+    float_keys = ["lr", "warmup_ratio", "lora_dropout", "max_grad_norm", "weight_decay"]
+    int_keys = ["max_seq_len", "batch_size", "epochs", "lora_r", "lora_alpha"]
+    for k in float_keys:
+        if k in cfg:
+            cfg[k] = float(cfg[k])
+    for k in int_keys:
+        if k in cfg:
+            cfg[k] = int(cfg[k])
+
     return cfg
 
 
