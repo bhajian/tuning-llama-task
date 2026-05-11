@@ -113,7 +113,7 @@ def setup_profiler(cfg, global_rank):
         on_trace_ready=tensorboard_trace_handler(profiler_dir),
         record_shapes=True,
         profile_memory=True,
-        with_stack=True,
+        with_stack=False,
     )
     print(f"Profiler enabled: steps {start}-{end}, output: {profiler_dir}")
     return prof
