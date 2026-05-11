@@ -44,7 +44,8 @@ kubectl wait --for=condition=ready pod/worker-0 pod/worker-1 -n soperator --time
 ### Step 2: Verify Slurm is ready
 
 ```bash
-kubectl exec -n soperator login-0 -- sinfo
+ssh root@89.169.111.219 sinfo
+# or: kubectl exec -n soperator login-0 -- sinfo
 ```
 
 Expected:
@@ -57,6 +58,14 @@ main*        up   infinite      2   idle worker-[0-1]
 ### Option A: Traditional (SSH to Login Node)
 
 #### 1. Access the login node
+
+Via SSH (using the Soperator login LoadBalancer):
+
+```bash
+ssh root@89.169.111.219
+```
+
+Or via kubectl:
 
 ```bash
 kubectl exec -it -n soperator login-0 -- bash
@@ -274,32 +283,38 @@ kubectl wait --for=condition=ready pod/worker-0 pod/worker-1 -n soperator --time
 
 ---
 
-## Evaluation (GPT-4o as Judge)
+## Evaluation (Claude Sonnet as Judge via Vertex AI)
 
-Evaluates both models on 1000 Alpaca samples using GPT-4o as an impartial judge. Run this while the inference servers are up.
+Evaluates both models on 1000 Alpaca samples using Claude Sonnet as an impartial judge via GCP Vertex AI. Run this while the inference servers are up.
 
 ### Jupyter Notebook (recommended)
 
 ```bash
-pip install openai datasets matplotlib seaborn pandas jupyter
-OPENAI_API_KEY=sk-xxx jupyter notebook inference/evaluation.ipynb
+pip install 'anthropic[vertex]' openai datasets matplotlib seaborn pandas jupyter
+jupyter notebook inference/evaluation.ipynb
 ```
+
+Requires GCP authentication (`gcloud auth login`) and env vars:
+- `ANTHROPIC_VERTEX_PROJECT_ID` — GCP project ID
+- `ANTHROPIC_VERTEX_REGION` — GCP region (default: `us-east5`)
 
 The notebook walks through:
 1. Load and sample 1000 Alpaca examples
-2. Query both models via their K8s API endpoints
-3. GPT-4o judges each response (binary YES/NO)
-4. Save all results to `results/`
-5. Accuracy bar chart + per-sample agreement breakdown
-6. Confusion matrix (base vs LoRA correctness)
-7. Throughput analysis (tokens/sec, latency distributions, p95)
+2. Smoke test: stream one sample from both models to verify LoRA improvement
+3. Query both models via their K8s API endpoints
+4. Claude Sonnet judges each response (binary YES/NO) with rate limiting and retries
+5. Save all results to `results/` (checkpointed — resumable if interrupted)
+6. Accuracy bar chart + per-sample agreement breakdown
+7. Confusion matrix (base vs LoRA correctness)
+8. Throughput analysis (tokens/sec, latency distributions, p95)
 
 ### CLI alternative
 
 ```bash
-OPENAI_API_KEY=sk-xxx python inference/evaluate.py \
+python inference/evaluate.py \
     --base-url http://$BASE_IP:8000 \
     --lora-url http://$LORA_IP:8000 \
+    --gcp-project $ANTHROPIC_VERTEX_PROJECT_ID \
     --samples 1000
 ```
 
@@ -323,7 +338,7 @@ Inference (Kubernetes mode — workers scaled down):
   └── Deployment B: base + LoRA adapter (LoadBalancer)
 
 Evaluation:
-  GPT-4o judge on 1000 Alpaca samples
+  Claude Sonnet judge (Vertex AI) on 1000 Alpaca samples
   └── Binary accuracy scoring (base vs fine-tuned)
 ```
 
