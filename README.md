@@ -4,10 +4,77 @@ Fine-tune Llama 3.1 8B with LoRA across 2 nodes (1x L40s each) over Ethernet, th
 
 ## Prerequisites
 
-- Soperator cluster running with 2 worker nodes (L40s GPUs)
-- HuggingFace token with Llama 3.1 access (`HF_TOKEN`)
-- Shared storage mounted at `/mnt/data`
 - `kubectl` configured to reach the cluster
+- HuggingFace token with Llama 3.1 access (`HF_TOKEN`)
+- GCP authentication for evaluation (`gcloud auth login`)
+
+---
+
+## Infrastructure Setup
+
+### Step 1: Clone the Nebius solutions repo
+
+This is a fork of [nebius/nebius-solutions-library](https://github.com/nebius/nebius-solutions-library) with Soperator modules for deploying Slurm-on-K8s clusters.
+
+```bash
+git clone git@github.com:bhajian/nebius-training.git
+cd nebius-training
+```
+
+### Step 2: Clone the infrastructure repo
+
+Inside the solutions repo, clone the infrastructure repo that contains all Terraform configs, MLflow, and TensorBoard deployments:
+
+```bash
+cd soperator/installations
+git clone git@github.com:bhajian/behnam-training-infra.git
+cd behnam-training-infra
+```
+
+### Step 3: Deploy the Soperator cluster
+
+```bash
+export NEBIUS_IAM_TOKEN=$(nebius iam get-access-token)
+export TF_VAR_iam_token="$NEBIUS_IAM_TOKEN"
+export TF_VAR_vpc_subnet_id=$(nebius vpc subnet list --parent-id project-e00v3cy1pr00enkn7rdbhm --format json | jq -r '.items[0].metadata.id')
+
+terraform init
+terraform plan
+terraform apply
+```
+
+See `behnam-training-infra/README.md` for full cluster configuration details.
+
+### Step 4: Deploy MLflow (experiment tracking)
+
+```bash
+cd behnam-training-infra
+./mlflow/deploy.sh
+```
+
+Access the MLflow UI from your laptop:
+
+```bash
+kubectl port-forward svc/mlflow -n mlflow 5000:5000
+# Open http://localhost:5000
+```
+
+Slurm jobs reach MLflow via internal K8s DNS (`http://mlflow.mlflow.svc.cluster.local:5000`) — no IP configuration needed.
+
+### Step 5: Deploy TensorBoard (profiler visualization)
+
+```bash
+./tensorboard/deploy.sh
+```
+
+Access TensorBoard from your laptop:
+
+```bash
+kubectl port-forward svc/tensorboard -n mlflow 6006:6006
+# Open http://localhost:6006 → select PYTORCH_PROFILER from the dropdown
+```
+
+---
 
 ## Important: GPU Ownership
 
@@ -104,69 +171,52 @@ If a run crashes mid-training, you still have the last completed epoch's checkpo
 
 ### MLflow Experiment Tracking
 
-Training metrics (loss, learning rate) are automatically logged to MLflow when `MLFLOW_TRACKING_URI` is set. To enable:
+Training metrics (loss, learning rate) are automatically logged to MLflow. The tracking URI is set in `train.sbatch` via internal K8s DNS — no manual configuration needed as long as MLflow is deployed (see Infrastructure Setup above).
 
-1. Deploy MLflow on K8s (see `behnam-deploy/README.md` for instructions):
-   ```bash
-   cd soperator/installations/behnam-deploy/
-   ./mlflow/deploy.sh
-   ```
+MLflow logs:
+- All hyperparameters at the start of the run
+- `train_loss` and `lr` every 10 steps
+- `epoch_avg_loss` at the end of each epoch
+- Final adapter as an artifact
 
-2. Submit training as usual — `train.sbatch` already has the tracking URI set via internal K8s DNS:
-   ```bash
-   export MLFLOW_TRACKING_URI=http://mlflow.mlflow.svc.cluster.local:5000
-   ```
-   Slurm nodes are inside the K8s cluster, so they reach MLflow directly. No IP configuration needed.
+View experiments from your laptop:
 
-3. MLflow logs:
-   - All hyperparameters at the start of the run
-   - `train_loss` and `lr` every 10 steps
-   - `epoch_avg_loss` at the end of each epoch
-   - Final adapter as an artifact
-
-4. View experiments from your laptop via port-forward:
-   ```bash
-   kubectl port-forward svc/mlflow -n mlflow 5000:5000
-   # Open http://localhost:5000
-   ```
+```bash
+kubectl port-forward svc/mlflow -n mlflow 5000:5000
+# Open http://localhost:5000
+```
 
 If MLflow is not deployed, training proceeds normally — the tracking URI will fail silently and training continues without logging.
 
 ### Torch Profiler
 
-To profile GPU performance during training, set `profiler_enabled: true` in your config YAML. The profiler captures a window of training steps (default: steps 10-20) and writes TensorBoard-compatible traces to `output_dir/profiler/`.
+To profile GPU performance during training, use the profiling config `train/configs/profile_run.yaml`. The profiler captures a window of training steps (default: steps 10-20) and writes TensorBoard-compatible traces to `output_dir/profiler/`.
 
-1. Create a profiling config:
-   ```yaml
-   # train/configs/profile_run.yaml
-   profiler_enabled: true
-   profiler_start_step: 10
-   profiler_end_step: 20
-   epochs: 1
-   ```
+Profiling is best run as a short test (1 epoch) before your full training run to identify bottlenecks:
 
-2. Run training with profiling:
+1. Run the profiling job:
    ```bash
    sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/profile_run.yaml
    ```
 
-3. Deploy TensorBoard to view results (see `behnam-deploy/README.md`):
+2. After the job completes, restart TensorBoard to pick up new traces:
    ```bash
-   cd soperator/installations/behnam-deploy/
-   ./tensorboard/deploy.sh
+   kubectl rollout restart deployment/tensorboard -n mlflow
    ```
 
-4. View profiler results from your laptop via port-forward:
+3. View profiler results from your laptop:
    ```bash
    kubectl port-forward svc/tensorboard -n mlflow 6006:6006
    ```
 
-5. Open `http://localhost:6006` and select **PYTORCH_PROFILER** from the dropdown to see:
+4. Open `http://localhost:6006` and select **PYTORCH_PROFILER** from the dropdown to see:
    - GPU utilization and time breakdown
    - Operator-level CPU/GPU timing
    - CUDA kernel view
    - Chrome-trace-style timeline
    - Memory allocation timeline
+
+5. Once satisfied with the profile, run the full training with the default config (`profiler_enabled: false`).
 
 ### Step 1: Ensure Soperator workers are running
 
@@ -225,7 +275,7 @@ export HF_TOKEN=hf_your_token_here
 bash ~/training-task/scripts/setup_env.sh
 ```
 
-`setup_env.sh` is idempotent — it creates a Python venv at `/mnt/data/venv`, installs PyTorch + training dependencies, downloads the Llama 3.1 8B model to `/mnt/data/Llama-3.1-8B`, and verifies the dataset splits are present on NFS. Safe to re-run.
+`setup_env.sh` is idempotent — it creates a Python venv at `/mnt/data/venv`, installs PyTorch + training dependencies (including `mlflow`, `pyyaml`, `tensorboard`), downloads the Llama 3.1 8B model to `/mnt/data/Llama-3.1-8B`, and verifies the dataset splits are present on NFS. Safe to re-run.
 
 #### 3. Verify GPUs
 
@@ -241,6 +291,9 @@ sbatch ~/training-task/train/train.sbatch
 
 # With a custom config
 sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/experiment_v2.yaml
+
+# Profiling run (1 epoch, profiler enabled)
+sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/profile_run.yaml
 ```
 
 #### 5. Monitor
@@ -248,6 +301,7 @@ sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/experime
 ```bash
 squeue
 tail -f /mnt/data/logs/train_<jobid>.out
+tail -f /mnt/data/logs/train_<jobid>.err
 ```
 
 #### 6. Cancel (if needed)
@@ -512,4 +566,10 @@ Evaluation:
   └── Binary accuracy scoring (base vs fine-tuned)
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for full infrastructure details.
+## Repos
+
+| Repo | Description |
+|------|-------------|
+| [nebius-training](https://github.com/bhajian/nebius-training) | Fork of nebius-solutions-library with Soperator modules |
+| [behnam-training-infra](https://github.com/bhajian/behnam-training-infra) | Terraform configs, MLflow & TensorBoard K8s deployments |
+| [tuning-llama-task](https://github.com/bhajian/tuning-llama-task) | Training code, inference configs, evaluation notebook |
