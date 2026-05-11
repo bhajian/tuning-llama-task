@@ -311,7 +311,7 @@ Evaluation:
 <!-- 2. Infrastructure -->
 <section id="infra">
   <h2><span class="step-num">2</span>Infrastructure Setup</h2>
-  <p>The infrastructure is deployed using Terraform via the Nebius Solutions Library. The Soperator module provisions a full Slurm cluster on Kubernetes with GPU-enabled worker nodes, shared NFS storage, and login nodes with SSH access.</p>
+  <p>Deployed via Terraform using the Nebius Solutions Library. Soperator provisions a Slurm cluster on Kubernetes with GPU worker nodes, shared NFS storage, and SSH-accessible login nodes.</p>
 
   <h3>Deployment Steps</h3>
   <pre>
@@ -344,7 +344,7 @@ terraform init && terraform apply
 <!-- 3. GPU Verification -->
 <section id="gpu-verify">
   <h2><span class="step-num">3</span>GPU Verification</h2>
-  <p>Before training, we verify that both L40S GPUs are accessible across nodes via Slurm. The <code>check_gpus.sh</code> script runs <code>nvidia-smi</code> on both workers and verifies NCCL connectivity.</p>
+  <p>Verify both L40S GPUs are accessible across nodes via Slurm. <code>check_gpus.sh</code> runs <code>nvidia-smi</code> on both workers and checks NCCL connectivity.</p>
 
   <div class="img-grid">
     <div class="img-card">
@@ -377,7 +377,7 @@ terraform init && terraform apply
   <div class="img-grid two">
     <div class="img-card">
       <img src="1.png" alt="Training logs" onclick="openLightbox(this)">
-      <div class="caption">Slurm job submission and training progress — DDP initialization, dataset packing, loss convergence across epochs</div>
+      <div class="caption">Slurm job submission — NCCL initialization across 2 nodes, dataset packing, and training loss over epochs</div>
     </div>
     <div class="img-card">
       <img src="7.png" alt="Job completion" onclick="openLightbox(this)">
@@ -389,49 +389,38 @@ terraform init && terraform apply
 <!-- 5. Cluster Monitoring -->
 <section id="monitoring">
   <h2><span class="step-num">5</span>Cluster Monitoring</h2>
-  <p>Nebius Cloud dashboard provides real-time metrics for all cluster nodes during training. Both GPUs sustain near-100% utilization throughout the run.</p>
+  <p>Nebius Cloud dashboard provides real-time metrics for all cluster nodes during training.</p>
 
   <div class="img-grid two">
     <div class="img-card">
       <img src="2.png" alt="Basic metrics" onclick="openLightbox(this)">
-      <div class="caption">Basic metrics — CPU, RAM, disk I/O, and network utilization across all cluster nodes during training</div>
+      <div class="caption">CPU, RAM, disk I/O, and network utilization across all cluster nodes</div>
     </div>
     <div class="img-card">
       <img src="3.png" alt="GPU metrics 15min" onclick="openLightbox(this)">
-      <div class="caption">GPU metrics (15-min window) — GPU utilization, memory utilization, frame buffer usage for both L40S GPUs</div>
+      <div class="caption">GPU utilization, memory utilization, and frame buffer usage (15-min window)</div>
     </div>
   </div>
 
   <div class="img-grid two">
     <div class="img-card">
       <img src="6.png" alt="GPU utilization closeup" onclick="openLightbox(this)">
-      <div class="caption">GPU utilization close-up — both GPUs sustaining 97-100% utilization with minimal dips (gradient sync)</div>
+      <div class="caption">GPU utilization close-up — both GPUs at 97-100% with brief periodic dips</div>
     </div>
-    <div class="img-card">
-      <img src="5.png" alt="GPU metrics inference" onclick="openLightbox(this)">
-      <div class="caption">GPU metrics during inference mode — different utilization pattern when serving with vLLM</div>
-    </div>
-  </div>
-
-  <div class="img-grid two">
     <div class="img-card">
       <img src="3hrs.png" alt="3-hour GPU view" onclick="openLightbox(this)">
-      <div class="caption">3-hour GPU view — full training run showing sustained utilization, memory plateau, and completion</div>
-    </div>
-    <div class="img-card">
-      <img src="4.png" alt="Power and temperature" onclick="openLightbox(this)">
-      <div class="caption">PCIe RX/TX, SM/memory clocks, power consumption, and temperature during training</div>
+      <div class="caption">3-hour GPU view — full training run duration with sustained utilization</div>
     </div>
   </div>
 
   <div class="img-grid two">
     <div class="img-card">
       <img src="3hrs-2.png" alt="3-hour extended metrics" onclick="openLightbox(this)">
-      <div class="caption">Extended metrics (3-hour window) — PCIe bandwidth, clock speeds, power draw, and GPU temperature trends</div>
+      <div class="caption">PCIe bandwidth, SM/memory clocks, power consumption, and GPU temperature (3-hour window)</div>
     </div>
     <div class="img-card">
       <img src="rx-tx.png" alt="PCIe RX/TX" onclick="openLightbox(this)">
-      <div class="caption">PCIe RX/TX bandwidth — data transfer pattern between GPUs showing NCCL all-reduce communication</div>
+      <div class="caption">PCIe RX/TX bandwidth during training — periodic pattern from NCCL collective operations</div>
     </div>
   </div>
 </section>
@@ -439,7 +428,7 @@ terraform init && terraform apply
 <!-- 6. Profiler -->
 <section id="profiler">
   <h2><span class="step-num">6</span>PyTorch Profiler Analysis</h2>
-  <p>A dedicated 1-epoch profiling run captures GPU kernel execution, operator timings, memory allocation, and distributed communication patterns. Results are visualized in TensorBoard with the PyTorch Profiler plugin.</p>
+  <p>A dedicated 1-epoch profiling run (steps 10-20) captures kernel execution, operator timings, memory allocation, and communication patterns. Visualized in TensorBoard via the PyTorch Profiler plugin.</p>
 
   <div class="stats-grid">
     <div class="stat-card">
@@ -463,29 +452,29 @@ terraform init && terraform apply
   <div class="img-grid two">
     <div class="img-card">
       <img src="profiler.png" alt="Profiler overview" onclick="openLightbox(this)">
-      <div class="caption">Profiler overview — GPU summary, execution breakdown (97.9% kernel time), step time analysis</div>
+      <div class="caption">Profiler overview — GPU summary (97.91% utilization, 95.8% SM efficiency), execution breakdown, step time chart</div>
     </div>
     <div class="img-card">
       <img src="profiler-operator.png" alt="Operator view" onclick="openLightbox(this)">
-      <div class="caption">Operator view — top operators by self time (aten::copy_, aten::mm, aten::mul, scaled_dot_product attention)</div>
+      <div class="caption">Operator view — top operators by host self time and host total time</div>
     </div>
   </div>
 
   <div class="img-grid two">
     <div class="img-card">
       <img src="profiler-gpu-kernel.png" alt="GPU kernel view" onclick="openLightbox(this)">
-      <div class="caption">GPU Kernel view — CUDA kernels sorted by total time, tensor core utilization (50.3% using tensor cores)</div>
+      <div class="caption">GPU Kernel view — CUDA kernels sorted by total time, with tensor core utilization breakdown</div>
     </div>
     <div class="img-card">
       <img src="memory.png" alt="Memory view" onclick="openLightbox(this)">
-      <div class="caption">Memory view — peak usage 24,740 MB, allocation timeline showing periodic gradient checkpointing pattern</div>
+      <div class="caption">Memory view — peak usage 24,740 MB with allocation/deallocation timeline</div>
     </div>
   </div>
 
   <div class="img-grid">
     <div class="img-card">
       <img src="distributed view.png" alt="Distributed view" onclick="openLightbox(this)">
-      <div class="caption">Distributed view — computation vs communication overlap, NCCL all_reduce operations (40 calls, 667 ms total)</div>
+      <div class="caption">Distributed view — computation/communication overlap; NCCL operations: 10 broadcast calls, 40 all_reduce calls (667 ms total latency)</div>
     </div>
   </div>
 </section>
@@ -493,7 +482,7 @@ terraform init && terraform apply
 <!-- 7. MLflow -->
 <section id="mlflow">
   <h2><span class="step-num">7</span>MLflow Experiment Tracking</h2>
-  <p>MLflow runs on Kubernetes with PVC-backed storage. Training jobs connect via internal K8s DNS (<code>mlflow.mlflow.svc.cluster.local:5000</code>). All hyperparameters, loss curves, and learning rate schedules are logged automatically.</p>
+  <p>MLflow runs on Kubernetes with PVC-backed storage. Slurm jobs connect via internal K8s DNS (<code>mlflow.mlflow.svc.cluster.local:5000</code>). Hyperparameters, loss, and learning rate are logged automatically from rank 0.</p>
 
   <div class="img-grid two">
     <div class="img-card">
@@ -502,7 +491,7 @@ terraform init && terraform apply
     </div>
     <div class="img-card">
       <img src="mlflow-metrics.png" alt="MLflow metrics" onclick="openLightbox(this)">
-      <div class="caption">MLflow model metrics — epoch average loss (decreasing from 1.35 to 1.05), learning rate (cosine decay), per-step train loss</div>
+      <div class="caption">MLflow model metrics — epoch_avg_loss (decreasing across 5 epochs), learning rate (cosine decay), per-step train_loss</div>
     </div>
   </div>
 </section>
@@ -510,7 +499,7 @@ terraform init && terraform apply
 <!-- 8. Inference -->
 <section id="inference">
   <h2><span class="step-num">8</span>Inference Deployment</h2>
-  <p>For inference, Soperator workers are scaled down to free GPUs. Two vLLM deployments serve the base and LoRA-adapted models in a dedicated <code>inference</code> namespace with LoadBalancer services.</p>
+  <p>Soperator workers are scaled to 0 to free GPUs. Two vLLM deployments serve the base and LoRA-adapted models in the <code>inference</code> namespace with LoadBalancer services.</p>
 
   <div class="img-grid two">
     <div class="img-card">
@@ -526,11 +515,11 @@ terraform init && terraform apply
   <div class="img-grid two">
     <div class="img-card">
       <img src="10.png" alt="Evaluation notebook" onclick="openLightbox(this)">
-      <div class="caption">Evaluation notebook — Jupyter environment with configuration, API smoke tests showing base (verbose) vs LoRA (concise) responses</div>
+      <div class="caption">Evaluation notebook — Jupyter configuration, vLLM service endpoints, and smoke test comparing both models</div>
     </div>
     <div class="img-card">
       <img src="inference-utilization.png" alt="Inference GPU" onclick="openLightbox(this)">
-      <div class="caption">GPU utilization during inference — bursty pattern as vLLM processes evaluation queries across both models</div>
+      <div class="caption">GPU utilization during inference — bursty pattern while serving evaluation queries via vLLM</div>
     </div>
   </div>
 </section>
@@ -538,7 +527,7 @@ terraform init && terraform apply
 <!-- 9. Evaluation -->
 <section id="evaluation">
   <h2><span class="step-num">9</span>Evaluation Results</h2>
-  <p>Three complementary evaluation methods assess the fine-tuned model against 1,000 samples from the held-out eval split (never seen during training).</p>
+  <p>Three evaluation methods assess the fine-tuned model on 1,000 held-out samples (10% eval split, never seen during training).</p>
 
   <div class="result-highlight">
     <h3>Key Results</h3>
@@ -579,7 +568,7 @@ terraform init && terraform apply
     <tr><td>Avg Latency</td><td>5.596s</td><td>1.395s</td></tr>
     <tr><td>Avg Tokens</td><td>242.8</td><td>52.0</td></tr>
   </table>
-  <p>The LoRA model responds 4x faster on average with much more concise outputs (52 vs 243 tokens), while the base model tends to generate verbose, repetitive text.</p>
+  <p>The LoRA model has lower per-token throughput (37.3 vs 43.4 tok/s). Per-request latency is lower (1.4s vs 5.6s) because the fine-tuned model generates shorter responses (52 tokens avg vs 243 tokens avg).</p>
 
   <div class="img-grid two">
     <div class="img-card">
@@ -599,7 +588,7 @@ terraform init && terraform apply
     </div>
     <div class="img-card">
       <img src="throughput_analysis.png" alt="Throughput analysis" onclick="openLightbox(this)">
-      <div class="caption">Throughput and latency distributions — LoRA is 4x faster per request due to concise responses</div>
+      <div class="caption">Throughput and latency distributions — LoRA has lower per-token throughput but much lower latency due to concise outputs</div>
     </div>
   </div>
 </section>
@@ -618,7 +607,7 @@ terraform init && terraform apply
 </div>
 
 <footer>
-  <p>Behnam Hajian &middot; Distributed LoRA Fine-Tuning on Nebius Soperator &middot; May 2025</p>
+  <p>Behnam Hajian &middot; Distributed LoRA Fine-Tuning on Nebius Soperator &middot; May 2026</p>
   <p><a href="https://github.com/bhajian/training-task-soperator">github.com/bhajian/training-task-soperator</a></p>
 </footer>
 
