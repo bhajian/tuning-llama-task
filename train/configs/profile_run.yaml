@@ -1,0 +1,23 @@
+model_id: /mnt/data/Llama-3.1-8B
+output_dir: /mnt/data/llama-3.1-8b-lora-adapter
+train_data: /mnt/data/dataset/train/alpaca_train.json
+
+max_seq_len: 2048
+batch_size: 2
+epochs: 1
+lr: 2e-4
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+weight_decay: 0.01
+
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_targets: [q_proj, k_proj, v_proj, o_proj]
+
+save_every_epoch: false
+mlflow_experiment: llama-3.1-8b-lora-profiling
+
+profiler_enabled: true
+profiler_start_step: 10
+profiler_end_step: 20
