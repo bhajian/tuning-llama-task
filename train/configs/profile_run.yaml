@@ -1,5 +1,5 @@
 model_id: /mnt/data/Llama-3.1-8B
-output_dir: /mnt/data/llama-3.1-8b-lora-adapter
+output_dir: /mnt/data/llama-3.1-8b-lora-profile-run
 train_data: /mnt/data/dataset/train/alpaca_train.json
 
 max_seq_len: 2048
