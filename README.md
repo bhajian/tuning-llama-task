@@ -34,12 +34,12 @@ This produces:
 - `dataset/train/alpaca_train.json` — 46,801 examples (used for training)
 - `dataset/eval/alpaca_eval.json` — 5,201 examples (used for evaluation)
 
-Then push both files to the shared NFS on the cluster:
+Then push both files to the shared NFS on the cluster via SCP:
 
 ```bash
-kubectl exec -n soperator login-0 -- mkdir -p /mnt/data/dataset/train /mnt/data/dataset/eval
-kubectl cp dataset/train/alpaca_train.json soperator/login-0:/mnt/data/dataset/train/alpaca_train.json
-kubectl cp dataset/eval/alpaca_eval.json soperator/login-0:/mnt/data/dataset/eval/alpaca_eval.json
+ssh root@89.169.111.219 "mkdir -p /mnt/data/dataset/train /mnt/data/dataset/eval"
+scp dataset/train/alpaca_train.json root@89.169.111.219:/mnt/data/dataset/train/
+scp dataset/eval/alpaca_eval.json root@89.169.111.219:/mnt/data/dataset/eval/
 ```
 
 The JSON files are gitignored — only the split script is committed.

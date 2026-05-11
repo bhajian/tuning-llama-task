@@ -6,3 +6,4 @@ results/
 *.egg-info/
 dataset/train/*.json
 dataset/eval/*.json
+old-llama-8b-results

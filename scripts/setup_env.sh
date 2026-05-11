@@ -59,8 +59,8 @@ if [ -f "$DATASET_DIR/train/alpaca_train.json" ] && [ -f "$DATASET_DIR/eval/alpa
 else
     echo "ERROR: Dataset splits not found at $DATASET_DIR"
     echo "  Run locally:  python dataset/split_dataset.py"
-    echo "  Then copy:    kubectl cp dataset/train/alpaca_train.json soperator/login-0:$DATASET_DIR/train/alpaca_train.json"
-    echo "                kubectl cp dataset/eval/alpaca_eval.json soperator/login-0:$DATASET_DIR/eval/alpaca_eval.json"
+    echo "  Then copy:    scp dataset/train/alpaca_train.json root@<LOGIN_IP>:$DATASET_DIR/train/"
+    echo "                scp dataset/eval/alpaca_eval.json root@<LOGIN_IP>:$DATASET_DIR/eval/"
     exit 1
 fi
 
