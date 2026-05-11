@@ -1,0 +1,18 @@
+{
+  "num_samples": 1000,
+  "judge_model": "claude-sonnet-4-6",
+  "judge_provider": "vertex-ai",
+  "base_accuracy": 49.4,
+  "lora_accuracy": 83.5,
+  "improvement": 34.1,
+  "base_avg_tokens": 242.8,
+  "lora_avg_tokens": 52.0,
+  "base_avg_latency_s": 5.596,
+  "lora_avg_latency_s": 1.395,
+  "base_throughput_tok_s": 43.4,
+  "lora_throughput_tok_s": 37.3,
+  "base_rouge_l": 0.2117,
+  "lora_rouge_l": 0.4304,
+  "base_bertscore_f1": 0.8418,
+  "lora_bertscore_f1": 0.9126
+}

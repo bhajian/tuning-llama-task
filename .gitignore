@@ -2,7 +2,7 @@
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
-results/
+
 *.egg-info/
 dataset/train/*.json
 dataset/eval/*.json
