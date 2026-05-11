@@ -20,6 +20,32 @@ The reconciliation chain is: FluxCD HelmRelease (`nodesets`) → NodeSet CRD →
 
 ---
 
+## Dataset Preparation
+
+The Alpaca dataset is split into 90% train / 10% eval to avoid data contamination during evaluation. Run this once from your laptop before training.
+
+```bash
+cd training-task
+pip install datasets
+python dataset/split_dataset.py
+```
+
+This produces:
+- `dataset/train/alpaca_train.json` — 46,801 examples (used for training)
+- `dataset/eval/alpaca_eval.json` — 5,201 examples (used for evaluation)
+
+Then push both files to the shared NFS on the cluster:
+
+```bash
+kubectl exec -n soperator login-0 -- mkdir -p /mnt/data/dataset/train /mnt/data/dataset/eval
+kubectl cp dataset/train/alpaca_train.json soperator/login-0:/mnt/data/dataset/train/alpaca_train.json
+kubectl cp dataset/eval/alpaca_eval.json soperator/login-0:/mnt/data/dataset/eval/alpaca_eval.json
+```
+
+The JSON files are gitignored — only the split script is committed.
+
+---
+
 ## Training
 
 ### Step 1: Ensure Soperator workers are running
@@ -79,7 +105,7 @@ export HF_TOKEN=hf_your_token_here
 bash ~/training-task/scripts/setup_env.sh
 ```
 
-`setup_env.sh` is idempotent — it creates a Python venv at `/mnt/data/venv`, installs PyTorch + training dependencies, downloads the Llama 3.1 8B model to `/mnt/data/Llama-3.1-8B`, and caches the Alpaca dataset. Safe to re-run.
+`setup_env.sh` is idempotent — it creates a Python venv at `/mnt/data/venv`, installs PyTorch + training dependencies, downloads the Llama 3.1 8B model to `/mnt/data/Llama-3.1-8B`, and verifies the dataset splits are present on NFS. Safe to re-run.
 
 #### 3. Verify GPUs
 
@@ -285,7 +311,7 @@ kubectl wait --for=condition=ready pod/worker-0 pod/worker-1 -n soperator --time
 
 ## Evaluation (Claude Sonnet as Judge via Vertex AI)
 
-Evaluates both models on 1000 Alpaca samples using Claude Sonnet as an impartial judge via GCP Vertex AI. Run this while the inference servers are up.
+Evaluates both models on 1000 samples from the held-out eval split (10% of Alpaca, never seen during training) using Claude Sonnet as an impartial judge via GCP Vertex AI. Run this while the inference servers are up.
 
 ### Jupyter Notebook (recommended)
 
@@ -299,7 +325,7 @@ Requires GCP authentication (`gcloud auth login`) and env vars:
 - `ANTHROPIC_VERTEX_REGION` — GCP region (default: `us-east5`)
 
 The notebook walks through:
-1. Load and sample 1000 Alpaca examples
+1. Load and sample 1000 examples from the eval split
 2. Smoke test: stream one sample from both models to verify LoRA improvement
 3. Query both models via their K8s API endpoints
 4. Claude Sonnet judges each response (binary YES/NO) with rate limiting and retries

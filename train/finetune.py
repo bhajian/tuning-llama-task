@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """LoRA fine-tuning of Llama 3.1 8B with DDP over Ethernet."""
 
+import json
 import os
 import torch
 import torch.distributed as dist
@@ -12,11 +13,11 @@ from transformers import (
     get_cosine_schedule_with_warmup,
 )
 from peft import LoraConfig, get_peft_model, TaskType
-from datasets import load_dataset
 
 
 MODEL_ID = "/mnt/data/Llama-3.1-8B"
 OUTPUT_DIR = "/mnt/data/llama-3.1-8b-lora-adapter"
+TRAIN_DATA = "/mnt/data/dataset/train/alpaca_train.json"
 MAX_SEQ_LEN = 2048
 BATCH_SIZE = 2
 EPOCHS = 3
@@ -101,7 +102,10 @@ def main():
     if global_rank == 0:
         print("Loading and tokenizing dataset...")
 
-    dataset = load_dataset("tatsu-lab/alpaca", split="train")
+    with open(TRAIN_DATA) as f:
+        dataset = json.load(f)
+    if global_rank == 0:
+        print(f"Loaded {len(dataset)} training examples from {TRAIN_DATA}")
     packed = tokenize_and_pack(dataset, tokenizer)
     if global_rank == 0:
         print(f"Packed dataset: {len(packed)} sequences of {MAX_SEQ_LEN} tokens")

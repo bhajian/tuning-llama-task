@@ -53,11 +53,15 @@ else
 fi
 
 # --- Dataset ---
-echo "==> Ensuring Alpaca dataset is cached"
-python -c "
-from datasets import load_dataset
-ds = load_dataset('tatsu-lab/alpaca', split='train')
-print(f'Dataset ready: {len(ds)} examples')
-"
+DATASET_DIR="/mnt/data/dataset"
+if [ -f "$DATASET_DIR/train/alpaca_train.json" ] && [ -f "$DATASET_DIR/eval/alpaca_eval.json" ]; then
+    echo "==> Dataset splits already present at $DATASET_DIR"
+else
+    echo "ERROR: Dataset splits not found at $DATASET_DIR"
+    echo "  Run locally:  python dataset/split_dataset.py"
+    echo "  Then copy:    kubectl cp dataset/train/alpaca_train.json soperator/login-0:$DATASET_DIR/train/alpaca_train.json"
+    echo "                kubectl cp dataset/eval/alpaca_eval.json soperator/login-0:$DATASET_DIR/eval/alpaca_eval.json"
+    exit 1
+fi
 
 echo "==> Environment ready."
