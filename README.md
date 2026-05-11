@@ -48,6 +48,126 @@ The JSON files are gitignored — only the split script is committed.
 
 ## Training
 
+### Configuration
+
+All training hyperparameters are defined in YAML config files under `train/configs/`. The default config is `train/configs/default.yaml`:
+
+```yaml
+model_id: /mnt/data/Llama-3.1-8B
+output_dir: /mnt/data/llama-3.1-8b-lora-adapter
+train_data: /mnt/data/dataset/train/alpaca_train.json
+
+max_seq_len: 2048
+batch_size: 2
+epochs: 5
+lr: 2e-4
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+weight_decay: 0.01
+
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_targets: [q_proj, k_proj, v_proj, o_proj]
+
+save_every_epoch: true
+mlflow_experiment: llama-3.1-8b-lora
+
+profiler_enabled: false
+profiler_start_step: 10
+profiler_end_step: 20
+```
+
+To run an experiment with different hyperparameters, copy the default config and modify it:
+
+```bash
+cp train/configs/default.yaml train/configs/experiment_v2.yaml
+# Edit experiment_v2.yaml with your changes
+sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/experiment_v2.yaml
+```
+
+You can also override individual parameters via CLI without creating a new config file:
+
+```bash
+# Inside train.sbatch or directly with torchrun:
+finetune.py --config configs/default.yaml --lr 1e-4 --epochs 3 --lora_r 32
+```
+
+### Checkpointing
+
+When `save_every_epoch: true` (default), the training script saves:
+- `output_dir/checkpoint-epoch-N/` — adapter after each epoch
+- `output_dir/best-adapter/` — adapter with the lowest average loss
+- `output_dir/` — final adapter after all epochs complete
+
+If a run crashes mid-training, you still have the last completed epoch's checkpoint.
+
+### MLflow Experiment Tracking
+
+Training metrics (loss, learning rate) are automatically logged to MLflow when `MLFLOW_TRACKING_URI` is set. To enable:
+
+1. Deploy MLflow on K8s (see `behnam-deploy/README.md` for instructions):
+   ```bash
+   cd soperator/installations/behnam-deploy/
+   ./mlflow/deploy.sh
+   ```
+
+2. Submit training as usual — `train.sbatch` already has the tracking URI set via internal K8s DNS:
+   ```bash
+   export MLFLOW_TRACKING_URI=http://mlflow.mlflow.svc.cluster.local:5000
+   ```
+   Slurm nodes are inside the K8s cluster, so they reach MLflow directly. No IP configuration needed.
+
+3. MLflow logs:
+   - All hyperparameters at the start of the run
+   - `train_loss` and `lr` every 10 steps
+   - `epoch_avg_loss` at the end of each epoch
+   - Final adapter as an artifact
+
+4. View experiments from your laptop via port-forward:
+   ```bash
+   kubectl port-forward svc/mlflow -n mlflow 5000:5000
+   # Open http://localhost:5000
+   ```
+
+If MLflow is not deployed, training proceeds normally — the tracking URI will fail silently and training continues without logging.
+
+### Torch Profiler
+
+To profile GPU performance during training, set `profiler_enabled: true` in your config YAML. The profiler captures a window of training steps (default: steps 10-20) and writes TensorBoard-compatible traces to `output_dir/profiler/`.
+
+1. Create a profiling config:
+   ```yaml
+   # train/configs/profile_run.yaml
+   profiler_enabled: true
+   profiler_start_step: 10
+   profiler_end_step: 20
+   epochs: 1
+   ```
+
+2. Run training with profiling:
+   ```bash
+   sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/profile_run.yaml
+   ```
+
+3. Deploy TensorBoard to view results (see `behnam-deploy/README.md`):
+   ```bash
+   cd soperator/installations/behnam-deploy/
+   ./tensorboard/deploy.sh
+   ```
+
+4. View profiler results from your laptop via port-forward:
+   ```bash
+   kubectl port-forward svc/tensorboard -n mlflow 6006:6006
+   ```
+
+5. Open `http://localhost:6006` and select **PYTORCH_PROFILER** from the dropdown to see:
+   - GPU utilization and time breakdown
+   - Operator-level CPU/GPU timing
+   - CUDA kernel view
+   - Chrome-trace-style timeline
+   - Memory allocation timeline
+
 ### Step 1: Ensure Soperator workers are running
 
 If you previously scaled down workers for inference, restore them:
@@ -116,7 +236,11 @@ srun -N2 --gpus-per-node=1 bash ~/training-task/scripts/check_gpus.sh
 #### 4. Submit training job
 
 ```bash
+# With default config
 sbatch ~/training-task/train/train.sbatch
+
+# With a custom config
+sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/experiment_v2.yaml
 ```
 
 #### 5. Monitor
@@ -151,7 +275,19 @@ HF_TOKEN=hf_your_token_here ./scripts/deploy.sh
 
 ### Training output
 
-The LoRA adapter saves to `/mnt/data/llama-3.1-8b-lora-adapter/` (~52 MB).
+The LoRA adapter saves to `/mnt/data/llama-3.1-8b-lora-adapter/` (~52 MB):
+
+```
+/mnt/data/llama-3.1-8b-lora-adapter/
+  adapter_config.json          # Final adapter
+  adapter_model.safetensors
+  config.yaml                  # Resolved config (for reproducibility)
+  checkpoint-epoch-1/          # Per-epoch checkpoints (if save_every_epoch: true)
+  checkpoint-epoch-2/
+  ...
+  best-adapter/                # Best checkpoint by avg loss
+  profiler/                    # Torch profiler traces (if profiler_enabled: true)
+```
 
 ---
 
@@ -356,12 +492,20 @@ Training (Soperator/Slurm mode):
   ├── LoRA (r=16, alpha=32) on q/k/v/o projections
   ├── BF16 + SDPA attention
   ├── Gradient checkpointing
-  └── Sequence packing (2048 ctx, no padding waste)
+  ├── Sequence packing (2048 ctx, no padding waste)
+  ├── YAML config + CLI overrides (reproducible experiments)
+  ├── Per-epoch checkpoints + best-adapter tracking
+  ├── MLflow experiment tracking (optional, via K8s)
+  └── Torch profiler with TensorBoard visualization (optional)
 
 Inference (Kubernetes mode — workers scaled down):
   vLLM in dedicated "inference" namespace
   ├── Deployment A: base Llama 3.1 8B (LoadBalancer)
   └── Deployment B: base + LoRA adapter (LoadBalancer)
+
+Observability (Kubernetes, "mlflow" namespace):
+  ├── MLflow tracking server (PVC-backed, port 5000)
+  └── TensorBoard (profiler visualization, port 6006)
 
 Evaluation:
   Claude Sonnet judge (Vertex AI) on 1000 Alpaca samples

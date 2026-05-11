@@ -9,6 +9,8 @@
 
 set -euo pipefail
 
+CONFIG="${1:-/root/training-task/train/configs/default.yaml}"
+
 MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
 MASTER_PORT=29500
 
@@ -16,6 +18,11 @@ export NCCL_IB_DISABLE=1
 export NCCL_SOCKET_IFNAME=eth0
 export NCCL_DEBUG=INFO
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+# MLflow experiment tracking via internal K8s DNS.
+# Deploy MLflow first: behnam-deploy/mlflow/deploy.sh
+# Slurm nodes reach MLflow through the cluster-internal service name.
+export MLFLOW_TRACKING_URI=http://mlflow.mlflow.svc.cluster.local:5000
 
 mkdir -p /mnt/data/logs
 
@@ -27,5 +34,5 @@ srun bash -c "
         --node_rank=\$SLURM_NODEID \
         --master_addr=$MASTER_ADDR \
         --master_port=$MASTER_PORT \
-        /root/training-task/train/finetune.py
+        /root/training-task/train/finetune.py --config $CONFIG
 "
