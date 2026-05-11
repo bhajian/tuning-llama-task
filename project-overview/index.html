@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed LoRA Fine-Tuning on Nebius Soperator</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1e2e 0%, #0d1117 50%, #161b22 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 20px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 2.4em;
+    font-weight: 700;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p { color: var(--text-muted); font-size: 1.15em; max-width: 700px; margin: 0 auto; }
+  .hero .meta {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .hero .meta span {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 32px;
+    margin-bottom: 48px;
+  }
+  .toc h2 { font-size: 1.1em; color: var(--accent); margin-bottom: 12px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 6px 0; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  section { margin-bottom: 56px; }
+  h2 {
+    font-size: 1.6em;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  h2 .step-num {
+    background: var(--accent);
+    color: var(--bg);
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.65em;
+    font-weight: 700;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  h3 { font-size: 1.15em; color: var(--text); margin: 20px 0 10px; }
+  p { color: var(--text-muted); margin-bottom: 14px; }
+  .img-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .img-grid.two { grid-template-columns: 1fr 1fr; }
+  .img-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 768px) {
+    .img-grid.two, .img-grid.three { grid-template-columns: 1fr; }
+  }
+  .img-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .img-card img {
+    width: 100%;
+    display: block;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .img-card img:hover { transform: scale(1.02); }
+  .img-card .caption {
+    padding: 10px 14px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat-card .value {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-card .value.green { color: var(--green); }
+  .stat-card .value.orange { color: var(--orange); }
+  .stat-card .value.purple { color: var(--purple); }
+  .stat-card .label {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.9em;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  th { background: var(--surface); color: var(--text); font-weight: 600; }
+  td { color: var(--text-muted); }
+  code {
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--accent);
+  }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    margin: 12px 0;
+    color: var(--text);
+  }
+  .arch-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 16px 0;
+    font-family: monospace;
+    font-size: 0.88em;
+    white-space: pre-wrap;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+  .result-highlight {
+    background: linear-gradient(135deg, rgba(63,185,80,0.1), rgba(88,166,255,0.1));
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .result-highlight h3 { color: var(--green); margin-top: 0; }
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85em;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  /* Lightbox */
+  .lightbox {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 1000;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+  .lightbox.active { display: flex; }
+  .lightbox img {
+    max-width: 95%;
+    max-height: 95%;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('active')">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<div class="hero">
+  <h1>Distributed LoRA Fine-Tuning on Nebius</h1>
+  <p>Fine-tuning Llama 3.1 8B with LoRA across 2 nodes using Nebius Soperator (Slurm-on-Kubernetes), then serving and evaluating base vs fine-tuned models.</p>
+  <div class="meta">
+    <span>Llama 3.1 8B</span>
+    <span>2x NVIDIA L40S</span>
+    <span>LoRA r=16</span>
+    <span>Nebius Soperator</span>
+    <span>5 Epochs</span>
+    <span>Alpaca Dataset</span>
+  </div>
+</div>
+
+<div class="container">
+
+<nav class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#architecture">Architecture Overview</a></li>
+    <li><a href="#infra">Infrastructure Setup</a></li>
+    <li><a href="#gpu-verify">GPU Verification</a></li>
+    <li><a href="#training">Distributed Training</a></li>
+    <li><a href="#monitoring">Cluster Monitoring</a></li>
+    <li><a href="#profiler">PyTorch Profiler Analysis</a></li>
+    <li><a href="#mlflow">MLflow Experiment Tracking</a></li>
+    <li><a href="#inference">Inference Deployment</a></li>
+    <li><a href="#evaluation">Evaluation Results</a></li>
+    <li><a href="#repos">Repositories</a></li>
+  </ol>
+</nav>
+
+<!-- 1. Architecture -->
+<section id="architecture">
+  <h2><span class="step-num">1</span>Architecture Overview</h2>
+  <p>The system uses Nebius Soperator to deploy a Slurm cluster on Kubernetes. Two GPU nodes (1x L40S each) handle training via DDP over Ethernet. GPUs are shared between training and inference by scaling Soperator workers up/down.</p>
+
+  <div class="arch-box">2 Nodes (1x L40S each, Ethernet)
+
+Training (Soperator/Slurm mode):
+  torchrun DDP, NCCL over TCP
+  ├── LoRA (r=16, alpha=32) on q/k/v/o projections
+  ├── BF16 + SDPA attention
+  ├── Gradient checkpointing
+  ├── Sequence packing (2048 ctx, no padding waste)
+  ├── YAML config + CLI overrides
+  ├── Per-epoch checkpoints + best-adapter tracking
+  ├── MLflow experiment tracking (K8s)
+  └── Torch profiler + TensorBoard (K8s)
+
+Inference (Kubernetes mode — workers scaled down):
+  vLLM in dedicated "inference" namespace
+  ├── Deployment A: base Llama 3.1 8B (LoadBalancer)
+  └── Deployment B: base + LoRA adapter (LoadBalancer)
+
+Observability (Kubernetes, "mlflow" namespace):
+  ├── MLflow tracking server (PVC-backed, port 5000)
+  └── TensorBoard (profiler visualization, port 6006)
+
+Evaluation:
+  ├── Claude Sonnet judge (Vertex AI) — 1000 Alpaca samples
+  ├── ROUGE-L (surface-level similarity)
+  └── BERTScore (semantic similarity)</div>
+
+  <table>
+    <tr><th>Component</th><th>Details</th></tr>
+    <tr><td>Base Model</td><td>Meta Llama 3.1 8B</td></tr>
+    <tr><td>GPU</td><td>2x NVIDIA L40S (48 GB each)</td></tr>
+    <tr><td>Interconnect</td><td>Ethernet (TCP/NCCL, no InfiniBand)</td></tr>
+    <tr><td>Orchestrator</td><td>Nebius Soperator 3.0.3 (Slurm on K8s)</td></tr>
+    <tr><td>Region</td><td>eu-north1</td></tr>
+    <tr><td>K8s Version</td><td>1.32</td></tr>
+    <tr><td>Training Framework</td><td>PyTorch DDP + PEFT (LoRA)</td></tr>
+    <tr><td>Serving</td><td>vLLM 0.8.2</td></tr>
+    <tr><td>Dataset</td><td>Alpaca (46,801 train / 5,201 eval)</td></tr>
+  </table>
+</section>
+
+<!-- 2. Infrastructure -->
+<section id="infra">
+  <h2><span class="step-num">2</span>Infrastructure Setup</h2>
+  <p>The infrastructure is deployed using Terraform via the Nebius Solutions Library. The Soperator module provisions a full Slurm cluster on Kubernetes with GPU-enabled worker nodes, shared NFS storage, and login nodes with SSH access.</p>
+
+  <h3>Deployment Steps</h3>
+  <pre>
+# 1. Clone Nebius solutions repo (Soperator fork)
+git clone git@github.com:bhajian/nebius-training.git
+
+# 2. Clone infrastructure configs
+cd soperator/installations
+git clone git@github.com:bhajian/behnam-training-infra.git
+
+# 3. Deploy Soperator cluster
+export NEBIUS_IAM_TOKEN=$(nebius iam get-access-token)
+terraform init && terraform apply
+
+# 4. Deploy MLflow + TensorBoard
+./mlflow/deploy.sh
+./tensorboard/deploy.sh</pre>
+
+  <table>
+    <tr><th>Resource</th><th>Configuration</th></tr>
+    <tr><td>Workers</td><td>2x gpu-l40s-d (1 GPU, 16 vCPU, 96 GB RAM)</td></tr>
+    <tr><td>Login Nodes</td><td>2x cpu-d3 (32 vCPU, 128 GB RAM)</td></tr>
+    <tr><td>Jail Storage</td><td>1 TiB NFS (shared across nodes)</td></tr>
+    <tr><td>Data Storage</td><td>1 TiB NFS at <code>/mnt/data</code></td></tr>
+    <tr><td>MLflow</td><td>PVC-backed (10 Gi), ClusterIP + port-forward</td></tr>
+    <tr><td>TensorBoard</td><td>hostPath mount, ClusterIP + port-forward</td></tr>
+  </table>
+</section>
+
+<!-- 3. GPU Verification -->
+<section id="gpu-verify">
+  <h2><span class="step-num">3</span>GPU Verification</h2>
+  <p>Before training, we verify that both L40S GPUs are accessible across nodes via Slurm. The <code>check_gpus.sh</code> script runs <code>nvidia-smi</code> on both workers and verifies NCCL connectivity.</p>
+
+  <div class="img-grid">
+    <div class="img-card">
+      <img src="0.png" alt="GPU verification" onclick="openLightbox(this)">
+      <div class="caption">nvidia-smi output from both worker nodes — 2x NVIDIA L40S (48 GB each), CUDA 12.8, with NCCL network verification</div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Training -->
+<section id="training">
+  <h2><span class="step-num">4</span>Distributed Training</h2>
+  <p>Training runs as a Slurm batch job using <code>torchrun</code> for DDP across 2 nodes. The LoRA adapter targets q/k/v/o projections with rank 16, trained for 5 epochs on the Alpaca dataset with sequence packing.</p>
+
+  <h3>Training Configuration</h3>
+  <table>
+    <tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>LoRA Rank / Alpha</td><td>16 / 32</td></tr>
+    <tr><td>LoRA Targets</td><td>q_proj, k_proj, v_proj, o_proj</td></tr>
+    <tr><td>Learning Rate</td><td>2e-4 (cosine schedule)</td></tr>
+    <tr><td>Batch Size</td><td>2 per GPU</td></tr>
+    <tr><td>Sequence Length</td><td>2048 (packed, no padding)</td></tr>
+    <tr><td>Precision</td><td>BF16 + SDPA</td></tr>
+    <tr><td>Epochs</td><td>5</td></tr>
+    <tr><td>Gradient Checkpointing</td><td>Enabled</td></tr>
+    <tr><td>Total Training Time</td><td>~1 hour 4 minutes</td></tr>
+    <tr><td>Adapter Size</td><td>~52 MB</td></tr>
+  </table>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="1.png" alt="Training logs" onclick="openLightbox(this)">
+      <div class="caption">Slurm job submission and training progress — DDP initialization, dataset packing, loss convergence across epochs</div>
+    </div>
+    <div class="img-card">
+      <img src="7.png" alt="Job completion" onclick="openLightbox(this)">
+      <div class="caption">Slurm job accounting — Job 35 completed in 1:04:01 across both workers</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Cluster Monitoring -->
+<section id="monitoring">
+  <h2><span class="step-num">5</span>Cluster Monitoring</h2>
+  <p>Nebius Cloud dashboard provides real-time metrics for all cluster nodes during training. Both GPUs sustain near-100% utilization throughout the run.</p>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="2.png" alt="Basic metrics" onclick="openLightbox(this)">
+      <div class="caption">Basic metrics — CPU, RAM, disk I/O, and network utilization across all cluster nodes during training</div>
+    </div>
+    <div class="img-card">
+      <img src="3.png" alt="GPU metrics 15min" onclick="openLightbox(this)">
+      <div class="caption">GPU metrics (15-min window) — GPU utilization, memory utilization, frame buffer usage for both L40S GPUs</div>
+    </div>
+  </div>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="6.png" alt="GPU utilization closeup" onclick="openLightbox(this)">
+      <div class="caption">GPU utilization close-up — both GPUs sustaining 97-100% utilization with minimal dips (gradient sync)</div>
+    </div>
+    <div class="img-card">
+      <img src="5.png" alt="GPU metrics inference" onclick="openLightbox(this)">
+      <div class="caption">GPU metrics during inference mode — different utilization pattern when serving with vLLM</div>
+    </div>
+  </div>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="3hrs.png" alt="3-hour GPU view" onclick="openLightbox(this)">
+      <div class="caption">3-hour GPU view — full training run showing sustained utilization, memory plateau, and completion</div>
+    </div>
+    <div class="img-card">
+      <img src="4.png" alt="Power and temperature" onclick="openLightbox(this)">
+      <div class="caption">PCIe RX/TX, SM/memory clocks, power consumption, and temperature during training</div>
+    </div>
+  </div>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="3hrs-2.png" alt="3-hour extended metrics" onclick="openLightbox(this)">
+      <div class="caption">Extended metrics (3-hour window) — PCIe bandwidth, clock speeds, power draw, and GPU temperature trends</div>
+    </div>
+    <div class="img-card">
+      <img src="rx-tx.png" alt="PCIe RX/TX" onclick="openLightbox(this)">
+      <div class="caption">PCIe RX/TX bandwidth — data transfer pattern between GPUs showing NCCL all-reduce communication</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Profiler -->
+<section id="profiler">
+  <h2><span class="step-num">6</span>PyTorch Profiler Analysis</h2>
+  <p>A dedicated 1-epoch profiling run captures GPU kernel execution, operator timings, memory allocation, and distributed communication patterns. Results are visualized in TensorBoard with the PyTorch Profiler plugin.</p>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="value green">97.9%</div>
+      <div class="label">GPU Utilization</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">95.8%</div>
+      <div class="label">SM Efficiency</div>
+    </div>
+    <div class="stat-card">
+      <div class="value orange">97.9%</div>
+      <div class="label">Time in Kernels</div>
+    </div>
+    <div class="stat-card">
+      <div class="value purple">24.7 GB</div>
+      <div class="label">Peak GPU Memory</div>
+    </div>
+  </div>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="profiler.png" alt="Profiler overview" onclick="openLightbox(this)">
+      <div class="caption">Profiler overview — GPU summary, execution breakdown (97.9% kernel time), step time analysis</div>
+    </div>
+    <div class="img-card">
+      <img src="profiler-operator.png" alt="Operator view" onclick="openLightbox(this)">
+      <div class="caption">Operator view — top operators by self time (aten::copy_, aten::mm, aten::mul, scaled_dot_product attention)</div>
+    </div>
+  </div>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="profiler-gpu-kernel.png" alt="GPU kernel view" onclick="openLightbox(this)">
+      <div class="caption">GPU Kernel view — CUDA kernels sorted by total time, tensor core utilization (50.3% using tensor cores)</div>
+    </div>
+    <div class="img-card">
+      <img src="memory.png" alt="Memory view" onclick="openLightbox(this)">
+      <div class="caption">Memory view — peak usage 24,740 MB, allocation timeline showing periodic gradient checkpointing pattern</div>
+    </div>
+  </div>
+
+  <div class="img-grid">
+    <div class="img-card">
+      <img src="distributed view.png" alt="Distributed view" onclick="openLightbox(this)">
+      <div class="caption">Distributed view — computation vs communication overlap, NCCL all_reduce operations (40 calls, 667 ms total)</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. MLflow -->
+<section id="mlflow">
+  <h2><span class="step-num">7</span>MLflow Experiment Tracking</h2>
+  <p>MLflow runs on Kubernetes with PVC-backed storage. Training jobs connect via internal K8s DNS (<code>mlflow.mlflow.svc.cluster.local:5000</code>). All hyperparameters, loss curves, and learning rate schedules are logged automatically.</p>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="mlflow.png" alt="MLflow experiments" onclick="openLightbox(this)">
+      <div class="caption">MLflow experiments dashboard — llama-3.1-8b-lora experiment with completed 1.1-hour training run</div>
+    </div>
+    <div class="img-card">
+      <img src="mlflow-metrics.png" alt="MLflow metrics" onclick="openLightbox(this)">
+      <div class="caption">MLflow model metrics — epoch average loss (decreasing from 1.35 to 1.05), learning rate (cosine decay), per-step train loss</div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. Inference -->
+<section id="inference">
+  <h2><span class="step-num">8</span>Inference Deployment</h2>
+  <p>For inference, Soperator workers are scaled down to free GPUs. Two vLLM deployments serve the base and LoRA-adapted models in a dedicated <code>inference</code> namespace with LoadBalancer services.</p>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="8.png" alt="GPU handover" onclick="openLightbox(this)">
+      <div class="caption">GPU handover — suspending FluxCD, scaling Soperator workers to 0, verifying GPU availability on both nodes</div>
+    </div>
+    <div class="img-card">
+      <img src="9.png" alt="vLLM deployment" onclick="openLightbox(this)">
+      <div class="caption">vLLM deployment — base and LoRA model pods running, vLLM 0.8.2 loading Llama 3.1 8B</div>
+    </div>
+  </div>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="10.png" alt="Evaluation notebook" onclick="openLightbox(this)">
+      <div class="caption">Evaluation notebook — Jupyter environment with configuration, API smoke tests showing base (verbose) vs LoRA (concise) responses</div>
+    </div>
+    <div class="img-card">
+      <img src="inference-utilization.png" alt="Inference GPU" onclick="openLightbox(this)">
+      <div class="caption">GPU utilization during inference — bursty pattern as vLLM processes evaluation queries across both models</div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. Evaluation -->
+<section id="evaluation">
+  <h2><span class="step-num">9</span>Evaluation Results</h2>
+  <p>Three complementary evaluation methods assess the fine-tuned model against 1,000 samples from the held-out eval split (never seen during training).</p>
+
+  <div class="result-highlight">
+    <h3>Key Results</h3>
+    <p style="color: var(--text); margin-bottom: 0;">The LoRA fine-tuned model achieves <strong>83.5% accuracy</strong> vs the base model's <strong>49.4%</strong> — a <strong>+34.1 percentage point improvement</strong> as judged by Claude Sonnet. Automated metrics confirm the improvement: ROUGE-L doubles from 0.21 to 0.43, and BERTScore F1 improves from 0.84 to 0.91.</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="value green">83.5%</div>
+      <div class="label">LoRA Accuracy</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">49.4%</div>
+      <div class="label">Base Accuracy</div>
+    </div>
+    <div class="stat-card">
+      <div class="value green">+34.1%</div>
+      <div class="label">Improvement</div>
+    </div>
+    <div class="stat-card">
+      <div class="value purple">1,000</div>
+      <div class="label">Eval Samples</div>
+    </div>
+  </div>
+
+  <h3>Evaluation Methods</h3>
+  <table>
+    <tr><th>Method</th><th>Base Model</th><th>LoRA Model</th><th>Delta</th></tr>
+    <tr><td>Claude Sonnet Judge (accuracy)</td><td>49.4%</td><td>83.5%</td><td style="color:#3fb950">+34.1%</td></tr>
+    <tr><td>ROUGE-L (surface similarity)</td><td>0.2117</td><td>0.4304</td><td style="color:#3fb950">+0.2187</td></tr>
+    <tr><td>BERTScore F1 (semantic similarity)</td><td>0.8418</td><td>0.9126</td><td style="color:#3fb950">+0.0708</td></tr>
+  </table>
+
+  <h3>Throughput</h3>
+  <table>
+    <tr><th>Metric</th><th>Base Model</th><th>LoRA Model</th></tr>
+    <tr><td>Throughput</td><td>43.4 tok/s</td><td>37.3 tok/s</td></tr>
+    <tr><td>Avg Latency</td><td>5.596s</td><td>1.395s</td></tr>
+    <tr><td>Avg Tokens</td><td>242.8</td><td>52.0</td></tr>
+  </table>
+  <p>The LoRA model responds 4x faster on average with much more concise outputs (52 vs 243 tokens), while the base model tends to generate verbose, repetitive text.</p>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="accuracy_comparison.png" alt="Accuracy comparison" onclick="openLightbox(this)">
+      <div class="caption">Judge accuracy and per-sample agreement — LoRA correct on 375 samples where base failed, only 34 regressions</div>
+    </div>
+    <div class="img-card">
+      <img src="confusion_matrix.png" alt="Confusion matrix" onclick="openLightbox(this)">
+      <div class="caption">Confusion matrix — 460 both correct, 375 LoRA-only correct, 34 base-only correct, 131 both wrong</div>
+    </div>
+  </div>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="automated_metrics.png" alt="Automated metrics" onclick="openLightbox(this)">
+      <div class="caption">ROUGE-L and BERTScore distributions — LoRA shows clear shift rightward on both metrics</div>
+    </div>
+    <div class="img-card">
+      <img src="throughput_analysis.png" alt="Throughput analysis" onclick="openLightbox(this)">
+      <div class="caption">Throughput and latency distributions — LoRA is 4x faster per request due to concise responses</div>
+    </div>
+  </div>
+</section>
+
+<!-- 10. Repos -->
+<section id="repos">
+  <h2><span class="step-num">10</span>Repositories</h2>
+  <table>
+    <tr><th>Repository</th><th>Description</th></tr>
+    <tr><td><a href="https://github.com/bhajian/training-task-soperator" style="color:var(--accent)">training-task-soperator</a></td><td>Training code, inference configs, evaluation notebook, this report</td></tr>
+    <tr><td><a href="https://github.com/bhajian/nebius-training" style="color:var(--accent)">nebius-training</a></td><td>Fork of nebius-solutions-library with Soperator modules</td></tr>
+    <tr><td><a href="https://github.com/bhajian/behnam-training-infra" style="color:var(--accent)">behnam-training-infra</a></td><td>Terraform configs, MLflow &amp; TensorBoard K8s deployments</td></tr>
+  </table>
+</section>
+
+</div>
+
+<footer>
+  <p>Behnam Hajian &middot; Distributed LoRA Fine-Tuning on Nebius Soperator &middot; May 2025</p>
+  <p><a href="https://github.com/bhajian/training-task-soperator">github.com/bhajian/training-task-soperator</a></p>
+</footer>
+
+<script>
+function openLightbox(img) {
+  document.getElementById('lightbox-img').src = img.src;
+  document.getElementById('lightbox').classList.add('active');
+}
+</script>
+
+</body>
+</html>
