@@ -270,7 +270,7 @@
 
   <!-- Kubernetes Stack Architecture -->
   <h3>Kubernetes Stack</h3>
-  <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;margin:16px auto;display:block;">
+  <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;margin:16px auto;display:block;">
     <defs>
       <marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#8b949e"/></marker>
     </defs>
@@ -310,12 +310,12 @@
     <text x="365" y="48" text-anchor="middle" fill="#58a6ff" font-size="15" font-weight="700">Soperator</text>
     <text x="365" y="68" text-anchor="middle" fill="#e6edf3" font-size="12">Slurm on Kubernetes</text>
     <text x="365" y="86" text-anchor="middle" fill="#8b949e" font-size="10">FluxCD + HelmRelease + NodeSet CRD</text>
-    <!-- Arrow down to workers -->
+    <!-- Arrow down to Slurm Components -->
     <line x1="365" y1="110" x2="365" y2="140" stroke="#8b949e" stroke-width="2" marker-end="url(#ah)"/>
     <!-- Arrow from observability to Soperator -->
     <line x1="210" y1="60" x2="255" y2="60" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="6,3"/>
 
-    <!-- GPU Operators -->
+    <!-- GPU Stack -->
     <rect x="10" y="210" width="200" height="100" rx="8" fill="#1a1e2e" stroke="#30363d"/>
     <text x="110" y="232" text-anchor="middle" fill="#8b949e" font-size="11">GPU Stack</text>
     <rect x="25" y="244" width="170" height="26" rx="4" fill="#161b22" stroke="#3fb950"/>
@@ -325,54 +325,76 @@
     <rect x="115" y="276" width="80" height="24" rx="4" fill="#161b22" stroke="#30363d"/>
     <text x="155" y="293" text-anchor="middle" fill="#8b949e" font-size="9">Drivers</text>
 
-    <!-- Slurm Components -->
-    <rect x="240" y="148" width="250" height="76" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="365" y="168" text-anchor="middle" fill="#8b949e" font-size="11">Slurm Components</text>
+    <!-- Slurm Daemons -->
+    <rect x="240" y="148" width="290" height="76" rx="8" fill="#1a1e2e" stroke="#30363d"/>
+    <text x="385" y="168" text-anchor="middle" fill="#8b949e" font-size="11">Slurm Daemons</text>
     <rect x="255" y="178" width="65" height="26" rx="4" fill="#161b22" stroke="#bc8cff"/>
     <text x="287" y="195" text-anchor="middle" fill="#e6edf3" font-size="10">slurmctld</text>
-    <rect x="330" y="178" width="55" height="26" rx="4" fill="#161b22" stroke="#bc8cff"/>
-    <text x="357" y="195" text-anchor="middle" fill="#e6edf3" font-size="10">slurmd</text>
-    <rect x="395" y="178" width="80" height="26" rx="4" fill="#161b22" stroke="#bc8cff"/>
-    <text x="435" y="195" text-anchor="middle" fill="#e6edf3" font-size="10">login nodes</text>
+    <rect x="328" y="178" width="52" height="26" rx="4" fill="#161b22" stroke="#bc8cff"/>
+    <text x="354" y="195" text-anchor="middle" fill="#e6edf3" font-size="10">slurmd</text>
+    <rect x="388" y="178" width="62" height="26" rx="4" fill="#161b22" stroke="#bc8cff"/>
+    <text x="419" y="195" text-anchor="middle" fill="#e6edf3" font-size="10">slurmdbd</text>
+    <rect x="458" y="178" width="58" height="26" rx="4" fill="#161b22" stroke="#bc8cff"/>
+    <text x="487" y="195" text-anchor="middle" fill="#e6edf3" font-size="10">munge</text>
+
+    <!-- Shared Storage -->
+    <rect x="560" y="148" width="160" height="76" rx="8" fill="#1a1e2e" stroke="#30363d"/>
+    <text x="640" y="168" text-anchor="middle" fill="#8b949e" font-size="11">Shared Storage</text>
+    <rect x="575" y="178" width="130" height="26" rx="4" fill="#161b22" stroke="#30363d"/>
+    <text x="640" y="196" text-anchor="middle" fill="#e6edf3" font-size="10">NFS /mnt/data (1 TiB)</text>
 
     <!-- Orchestration Platform Bar -->
     <rect x="10" y="340" width="880" height="44" rx="6" fill="#1a3a6e"/>
     <text x="240" y="367" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="700">Orchestration Platform</text>
     <text x="780" y="367" text-anchor="middle" fill="#e6edf3" font-size="13" font-weight="600">Kubernetes 1.32</text>
 
-    <!-- NFS Storage -->
-    <rect x="560" y="148" width="160" height="76" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="640" y="168" text-anchor="middle" fill="#8b949e" font-size="11">Shared Storage</text>
-    <rect x="575" y="178" width="130" height="26" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="640" y="196" text-anchor="middle" fill="#e6edf3" font-size="10">NFS /mnt/data (1 TiB)</text>
-
     <!-- Infrastructure / Nodes -->
-    <rect x="10" y="400" width="880" height="110" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <!-- GPU Node 1 -->
-    <rect x="30" y="416" width="250" height="80" rx="6" fill="#161b22" stroke="#3fb950"/>
-    <text x="155" y="436" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">GPU Node (worker-0)</text>
-    <rect x="45" y="444" width="100" height="22" rx="3" fill="#0d1117" stroke="#3fb950" stroke-width="0.5"/>
-    <text x="95" y="459" text-anchor="middle" fill="#e6edf3" font-size="10">NVIDIA L40S</text>
-    <text x="45" y="484" fill="#8b949e" font-size="9">16 vCPU · 96 GB · 48 GB VRAM</text>
-    <!-- Ethernet switch -->
-    <rect x="320" y="440" width="100" height="32" rx="4" fill="#161b22" stroke="#8b949e"/>
-    <text x="370" y="461" text-anchor="middle" fill="#e6edf3" font-size="10">Ethernet</text>
-    <line x1="280" y1="456" x2="320" y2="456" stroke="#8b949e" stroke-width="1.5"/>
-    <line x1="420" y1="456" x2="460" y2="456" stroke="#8b949e" stroke-width="1.5"/>
-    <!-- GPU Node 2 -->
-    <rect x="460" y="416" width="250" height="80" rx="6" fill="#161b22" stroke="#3fb950"/>
-    <text x="585" y="436" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">GPU Node (worker-1)</text>
-    <rect x="475" y="444" width="100" height="22" rx="3" fill="#0d1117" stroke="#3fb950" stroke-width="0.5"/>
-    <text x="525" y="459" text-anchor="middle" fill="#e6edf3" font-size="10">NVIDIA L40S</text>
-    <text x="475" y="484" fill="#8b949e" font-size="9">16 vCPU · 96 GB · 48 GB VRAM</text>
-    <!-- Login nodes -->
-    <rect x="750" y="416" width="120" height="80" rx="6" fill="#161b22" stroke="#58a6ff"/>
-    <text x="810" y="436" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="600">Login Nodes</text>
-    <text x="810" y="456" text-anchor="middle" fill="#8b949e" font-size="10">2x cpu-d3</text>
-    <text x="810" y="472" text-anchor="middle" fill="#8b949e" font-size="9">32 vCPU · 128 GB</text>
-    <text x="810" y="488" text-anchor="middle" fill="#8b949e" font-size="9">SSH access</text>
+    <rect x="10" y="400" width="880" height="150" rx="8" fill="#1a1e2e" stroke="#30363d"/>
+    <text x="450" y="420" text-anchor="middle" fill="#8b949e" font-size="11">Infrastructure Nodes · eu-north1 · Nebius Cloud</text>
 
-    <text x="450" y="330" text-anchor="middle" fill="#8b949e" font-size="10">eu-north1 · Nebius Cloud</text>
+    <!-- GPU Node worker-0 -->
+    <rect x="30" y="430" width="210" height="70" rx="6" fill="#161b22" stroke="#3fb950"/>
+    <text x="135" y="449" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">GPU Worker 0</text>
+    <rect x="45" y="457" width="80" height="18" rx="3" fill="#0d1117" stroke="#3fb950" stroke-width="0.5"/>
+    <text x="85" y="470" text-anchor="middle" fill="#e6edf3" font-size="9">NVIDIA L40S</text>
+    <text x="135" y="490" text-anchor="middle" fill="#8b949e" font-size="8">gpu-l40s-d · 16 vCPU · 96 GB · slurmd</text>
+
+    <!-- Ethernet -->
+    <rect x="255" y="452" width="70" height="26" rx="4" fill="#161b22" stroke="#8b949e"/>
+    <text x="290" y="469" text-anchor="middle" fill="#e6edf3" font-size="9">Ethernet</text>
+    <line x1="240" y1="465" x2="255" y2="465" stroke="#8b949e" stroke-width="1.5"/>
+    <line x1="325" y1="465" x2="340" y2="465" stroke="#8b949e" stroke-width="1.5"/>
+
+    <!-- GPU Node worker-1 -->
+    <rect x="340" y="430" width="210" height="70" rx="6" fill="#161b22" stroke="#3fb950"/>
+    <text x="445" y="449" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">GPU Worker 1</text>
+    <rect x="355" y="457" width="80" height="18" rx="3" fill="#0d1117" stroke="#3fb950" stroke-width="0.5"/>
+    <text x="395" y="470" text-anchor="middle" fill="#e6edf3" font-size="9">NVIDIA L40S</text>
+    <text x="445" y="490" text-anchor="middle" fill="#8b949e" font-size="8">gpu-l40s-d · 16 vCPU · 96 GB · slurmd</text>
+
+    <!-- CPU Nodes group -->
+    <rect x="570" y="430" width="300" height="110" rx="6" fill="#161b22" stroke="#58a6ff" stroke-dasharray="4,2"/>
+    <text x="720" y="449" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="600">CPU Nodes (cpu-d3)</text>
+
+    <!-- Controller -->
+    <rect x="585" y="458" width="130" height="34" rx="4" fill="#0d1117" stroke="#bc8cff"/>
+    <text x="650" y="473" text-anchor="middle" fill="#e6edf3" font-size="9" font-weight="600">Controller (1x)</text>
+    <text x="650" y="486" text-anchor="middle" fill="#8b949e" font-size="8">4 vCPU · 16 GB · slurmctld</text>
+
+    <!-- Login -->
+    <rect x="725" y="458" width="130" height="34" rx="4" fill="#0d1117" stroke="#58a6ff"/>
+    <text x="790" y="473" text-anchor="middle" fill="#e6edf3" font-size="9" font-weight="600">Login (2x)</text>
+    <text x="790" y="486" text-anchor="middle" fill="#8b949e" font-size="8">32 vCPU · 128 GB · SSH</text>
+
+    <!-- Accounting -->
+    <rect x="585" y="498" width="130" height="34" rx="4" fill="#0d1117" stroke="#d29922"/>
+    <text x="650" y="513" text-anchor="middle" fill="#e6edf3" font-size="9" font-weight="600">Accounting (1x)</text>
+    <text x="650" y="526" text-anchor="middle" fill="#8b949e" font-size="8">8 vCPU · 32 GB · slurmdbd</text>
+
+    <!-- System -->
+    <rect x="725" y="498" width="130" height="34" rx="4" fill="#0d1117" stroke="#30363d"/>
+    <text x="790" y="513" text-anchor="middle" fill="#e6edf3" font-size="9" font-weight="600">System (3x)</text>
+    <text x="790" y="526" text-anchor="middle" fill="#8b949e" font-size="8">8 vCPU · 32 GB · K8s system</text>
   </svg>
 
   <!-- Training Architecture -->
