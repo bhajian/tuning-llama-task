@@ -22,7 +22,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import anthropic
-from datasets import load_dataset
 from openai import OpenAI
 
 
@@ -117,6 +116,7 @@ def main():
     parser.add_argument("--lora-model", default="lora-adapter", help="LoRA model name in vLLM")
     parser.add_argument("--gcp-project", default=os.environ.get("ANTHROPIC_VERTEX_PROJECT_ID", ""), help="GCP project ID")
     parser.add_argument("--gcp-region", default=os.environ.get("CLOUD_ML_REGION", "europe-west1"), help="GCP region")
+    parser.add_argument("--eval-data", default="dataset/eval/alpaca_eval.json", help="Path to eval split JSON")
     parser.add_argument("--samples", type=int, default=1000, help="Number of samples to evaluate")
     parser.add_argument("--workers", type=int, default=4, help="Parallel workers")
     parser.add_argument("--output-dir", default="results", help="Output directory")
@@ -142,12 +142,15 @@ def main():
             samples = json.load(f)
         print(f"Loaded {len(samples)} samples from checkpoint")
     else:
-        print(f"Loading Alpaca dataset ({args.samples} samples)...")
-        dataset = load_dataset("tatsu-lab/alpaca", split="train")
-        dataset = dataset.shuffle(seed=42).select(range(min(args.samples, len(dataset))))
-        samples = [dict(s) for s in dataset]
+        print(f"Loading eval split from {args.eval_data}...")
+        with open(args.eval_data) as f:
+            eval_data = json.load(f)
+        import random
+        rng = random.Random(42)
+        samples = rng.sample(eval_data, min(args.samples, len(eval_data)))
         with open(samples_file, "w") as f:
             json.dump(samples, f)
+        print(f"Sampled {len(samples)} from {len(eval_data)} eval examples")
 
     print(f"\nBase model:  {args.base_url} ({args.base_model})")
     print(f"LoRA model:  {args.lora_url} ({args.lora_model})")
