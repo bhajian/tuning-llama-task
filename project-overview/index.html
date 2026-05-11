@@ -846,7 +846,7 @@ terraform init && terraform apply
   <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
     <div class="img-card" style="padding:1.5rem">
       <h3 style="color:var(--accent);margin-top:0">Smarter Data Handling</h3>
-      <p style="font-size:0.95rem">The current pipeline blindly packs samples into fixed 2048-token blocks. A pack boundary can land in the middle of a sample, truncating the instruction or answer and creating noisy training signal. A smarter approach would respect sample boundaries during packing, drop or re-bucket samples that don't fit cleanly, and filter out low-quality or duplicate entries before training begins.</p>
+      <p style="font-size:0.95rem">The current pipeline concatenates all tokenized examples into one flat stream and reshapes it into fixed 2048-token chunks. This means a chunk boundary can cut an example mid-sentence — the model trains on a partial instruction or a truncated answer, which introduces noise. Two approaches would fix this: <strong>(1) padding</strong> — pad each example so it ends at a chunk boundary, wasting some tokens but guaranteeing no example is split; <strong>(2) attention masking</strong> — pack multiple examples per block but apply per-example attention masks so the model never attends across example boundaries.</p>
     </div>
     <div class="img-card" style="padding:1.5rem">
       <h3 style="color:var(--accent);margin-top:0">Evaluation During Training</h3>
