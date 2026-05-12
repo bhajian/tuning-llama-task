@@ -1,6 +1,6 @@
 # Distributed LoRA Fine-Tuning on Nebius Soperator
 
-Fine-tune Llama 3.1 8B with LoRA across 2 nodes (1x L40s each) over Ethernet, then serve and compare base vs fine-tuned models.
+Fine-tune LLMs (Llama 3.1 8B, Qwen 2.5 14B) with LoRA across 2 nodes (1x L40S each) over Ethernet, then serve and compare base vs fine-tuned models.
 
 ## Prerequisites
 
@@ -213,7 +213,18 @@ profiler_start_step: 10
 profiler_end_step: 20
 ```
 
-To run an experiment with different hyperparameters, copy the default config and modify it:
+A Qwen 2.5 14B config is also provided at `train/configs/qwen2.5-14b.yaml`:
+
+```yaml
+model_id: /mnt/data/Qwen2.5-14B
+output_dir: /mnt/data/qwen2.5-14b-lora-adapter
+train_data: /mnt/data/dataset/train/alpaca_train.json
+batch_size: 1          # 14B is ~29GB in BF16, tight on 48GB L40S
+mlflow_experiment: qwen2.5-14b-lora
+# Same LoRA config (r=16, alpha=32, q/k/v/o) — Qwen2 uses identical attention module names
+```
+
+To run an experiment with different hyperparameters, copy a config and modify it:
 
 ```bash
 cp train/configs/default.yaml train/configs/experiment_v2.yaml
@@ -340,10 +351,17 @@ kubectl exec -it -n soperator login-0 -- bash
 ```bash
 git clone git@github.com:bhajian/tuning-llama-task.git ~/training-task
 export HF_TOKEN=hf_your_token_here
+
+# Llama 3.1 8B (default)
 bash ~/training-task/scripts/setup_env.sh
+
+# Qwen 2.5 14B
+bash ~/training-task/scripts/setup_env.sh \
+    --model-id Qwen/Qwen2.5-14B \
+    --model-dir /mnt/data/Qwen2.5-14B
 ```
 
-`setup_env.sh` is idempotent — it creates a Python venv at `/mnt/data/venv`, installs PyTorch + training dependencies (including `mlflow`, `pyyaml`, `tensorboard`), downloads the Llama 3.1 8B model to `/mnt/data/Llama-3.1-8B`, and verifies the dataset splits are present on NFS. Safe to re-run.
+`setup_env.sh` is idempotent — it creates a Python venv at `/mnt/data/venv`, installs PyTorch + training dependencies (including `mlflow`, `pyyaml`, `tensorboard`), downloads the specified model (defaults to Llama 3.1 8B), and verifies the dataset splits are present on NFS. Use `--model-id` and `--model-dir` to download a different model. Safe to re-run.
 
 #### 3. Verify GPUs
 
@@ -365,10 +383,13 @@ Confirm bus bandwidth reaches 0.8+ GB/s at 32 MB+ message sizes and zero errors.
 #### 5. Submit training job
 
 ```bash
-# With default config
+# Llama 3.1 8B (default config)
 sbatch ~/training-task/train/train.sbatch
 
-# With a custom config
+# Qwen 2.5 14B
+sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/qwen2.5-14b.yaml
+
+# Custom config
 sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/experiment_v2.yaml
 
 # Profiling run (1 epoch, profiler enabled)
@@ -618,7 +639,11 @@ python inference/evaluate.py \
 ## Architecture
 
 ```
-2 Nodes (1x L40s each, Ethernet)
+2 Nodes (1x L40S each, Ethernet)
+
+Supported models:
+  ├── Llama 3.1 8B  (batch_size=2, ~16GB in BF16)
+  └── Qwen 2.5 14B  (batch_size=1, ~29GB in BF16)
 
 Training (Soperator/Slurm mode):
   torchrun DDP, NCCL over TCP
@@ -633,7 +658,7 @@ Training (Soperator/Slurm mode):
 
 Inference (Kubernetes mode — workers scaled down):
   vLLM in dedicated "inference" namespace
-  ├── Deployment A: base Llama 3.1 8B (LoadBalancer)
+  ├── Deployment A: base model (LoadBalancer)
   └── Deployment B: base + LoRA adapter (LoadBalancer)
 
 Observability (Kubernetes, "mlflow" namespace):

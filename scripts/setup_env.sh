@@ -2,13 +2,23 @@
 # Idempotent environment + data setup. Runs ON the login node.
 # Called by deploy.sh via kubectl exec. Can also be run directly.
 #
-# Usage: HF_TOKEN=hf_xxx bash setup_env.sh
+# Usage:
+#   HF_TOKEN=hf_xxx bash setup_env.sh
+#   HF_TOKEN=hf_xxx bash setup_env.sh --model-id Qwen/Qwen2.5-14B --model-dir /mnt/data/Qwen2.5-14B
 
 set -euo pipefail
 
 VENV_DIR="/mnt/data/venv"
 MODEL_DIR="/mnt/data/Llama-3.1-8B"
 MODEL_ID="meta-llama/Llama-3.1-8B"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --model-id)  MODEL_ID="$2"; shift 2 ;;
+        --model-dir) MODEL_DIR="$2"; shift 2 ;;
+        *) echo "Unknown option: $1"; exit 1 ;;
+    esac
+done
 
 # --- Python venv ---
 if [ ! -f "$VENV_DIR/bin/activate" ]; then
