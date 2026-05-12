@@ -2,6 +2,11 @@
 
 Fine-tune LLMs (Llama 3.1 8B, Qwen 2.5 14B) with LoRA across 2 nodes (1x L40S each) over Ethernet, then serve and compare base vs fine-tuned models.
 
+### Project Reports
+
+- [Llama 3.1 8B — Training, Inference & Evaluation Report](project-overview/llama-3.1-8b/index.html)
+- [Qwen 2.5 14B — Profiling & Training Report](project-overview/qwen-2.5-14b/index.html)
+
 ## Prerequisites
 
 - `kubectl` configured to reach the cluster
@@ -350,6 +355,11 @@ kubectl exec -it -n soperator login-0 -- bash
 
 ```bash
 git clone git@github.com:bhajian/tuning-llama-task.git ~/training-task
+```
+
+#### 3. Download model and install dependencies
+
+```bash
 export HF_TOKEN=hf_your_token_here
 
 # Llama 3.1 8B (default)
@@ -361,9 +371,9 @@ bash ~/training-task/scripts/setup_env.sh \
     --model-dir /mnt/data/Qwen2.5-14B
 ```
 
-`setup_env.sh` is idempotent — it creates a Python venv at `/mnt/data/venv`, installs PyTorch + training dependencies (including `mlflow`, `pyyaml`, `tensorboard`), downloads the specified model (defaults to Llama 3.1 8B), and verifies the dataset splits are present on NFS. Use `--model-id` and `--model-dir` to download a different model. Safe to re-run.
+`setup_env.sh` is idempotent — it creates a Python venv at `/mnt/data/venv`, installs PyTorch + training dependencies (including `mlflow`, `pyyaml`, `tensorboard`), downloads the specified model to NFS, and verifies the dataset splits are present. Use `--model-id` and `--model-dir` to download a different model. Safe to re-run — skips steps already completed.
 
-#### 3. Verify GPUs
+#### 4. Verify GPUs
 
 ```bash
 srun -N2 --gpus-per-node=1 bash ~/training-task/scripts/check_gpus.sh

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qwen 2.5 14B — Distributed LoRA Fine-Tuning on Nebius Soperator</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1a1e2e 0%, #0d1117 50%, #161b22 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 20px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 2.4em;
+    font-weight: 700;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p { color: var(--text-muted); font-size: 1.15em; max-width: 700px; margin: 0 auto; }
+  .hero .meta {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .hero .meta span {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 32px;
+    margin-bottom: 48px;
+  }
+  .toc h2 { font-size: 1.1em; color: var(--accent); margin-bottom: 12px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 6px 0; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  section { margin-bottom: 56px; }
+  h2 {
+    font-size: 1.6em;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  h2 .step-num {
+    background: var(--accent);
+    color: var(--bg);
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.65em;
+    font-weight: 700;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  h3 { font-size: 1.15em; color: var(--text); margin: 20px 0 10px; }
+  p { color: var(--text-muted); margin-bottom: 14px; }
+  .img-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .img-grid.two { grid-template-columns: 1fr 1fr; }
+  .img-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 768px) {
+    .img-grid.two, .img-grid.three { grid-template-columns: 1fr; }
+  }
+  .img-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .img-card img {
+    width: 100%;
+    display: block;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .img-card img:hover { transform: scale(1.02); }
+  .img-card .caption {
+    padding: 10px 14px;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stat-card .value {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-card .value.green { color: var(--green); }
+  .stat-card .value.orange { color: var(--orange); }
+  .stat-card .value.purple { color: var(--purple); }
+  .stat-card .label {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.9em;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border: 1px solid var(--border);
+  }
+  th { background: var(--surface); color: var(--text); font-weight: 600; }
+  td { color: var(--text-muted); }
+  code {
+    background: var(--surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--accent);
+  }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    margin: 12px 0;
+    color: var(--text);
+  }
+  .result-highlight {
+    background: linear-gradient(135deg, rgba(63,185,80,0.1), rgba(88,166,255,0.1));
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .result-highlight h3 { color: var(--green); margin-top: 0; }
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85em;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  /* Lightbox */
+  .lightbox {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 1000;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+  .lightbox.active { display: flex; }
+  .lightbox img {
+    max-width: 95%;
+    max-height: 95%;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('active')">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<div class="hero">
+  <h1>Qwen 2.5 14B — LoRA Fine-Tuning on Nebius</h1>
+  <p>Fine-tuning Qwen 2.5 14B with LoRA across 2 nodes using Nebius Soperator (Slurm-on-Kubernetes). Profiling run (1 epoch) to validate GPU memory and performance before full training.</p>
+  <div class="meta">
+    <span>Qwen 2.5 14B</span>
+    <span>2x NVIDIA L40S</span>
+    <span>LoRA r=16</span>
+    <span>Nebius Soperator</span>
+    <span>1 Epoch (Profiling)</span>
+    <span>Alpaca Dataset</span>
+  </div>
+</div>
+
+<div class="container">
+
+<nav class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#config">Training Configuration</a></li>
+    <li><a href="#profiler">PyTorch Profiler Analysis</a></li>
+    <li><a href="#memory">GPU Memory Analysis</a></li>
+    <li><a href="#monitoring">Cluster Monitoring</a></li>
+    <li><a href="#mlflow">MLflow Experiment Tracking</a></li>
+  </ol>
+</nav>
+
+<!-- 1. Training Configuration -->
+<section id="config">
+  <h2><span class="step-num">1</span>Training Configuration</h2>
+  <p>Qwen 2.5 14B (~29 GB in BF16) fits on 48 GB L40S GPUs with LoRA and gradient checkpointing. Batch size is reduced to 1 per GPU compared to Llama 3.1 8B (batch size 2) due to the larger model footprint.</p>
+
+  <table>
+    <tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>Base Model</td><td>Qwen/Qwen2.5-14B (~29 GB BF16)</td></tr>
+    <tr><td>LoRA Rank / Alpha</td><td>16 / 32</td></tr>
+    <tr><td>LoRA Targets</td><td>q_proj, k_proj, v_proj, o_proj</td></tr>
+    <tr><td>Learning Rate</td><td>2e-4 (cosine schedule)</td></tr>
+    <tr><td>Batch Size</td><td>1 per GPU</td></tr>
+    <tr><td>Sequence Length</td><td>2048 (packed, no padding)</td></tr>
+    <tr><td>Precision</td><td>BF16 + SDPA</td></tr>
+    <tr><td>Gradient Checkpointing</td><td>Enabled</td></tr>
+    <tr><td>GPU</td><td>2x NVIDIA L40S (48 GB each)</td></tr>
+    <tr><td>Interconnect</td><td>Ethernet (TCP/NCCL, no InfiniBand)</td></tr>
+    <tr><td>Dataset</td><td>Alpaca (46,801 train / 5,201 eval)</td></tr>
+  </table>
+
+  <svg viewBox="0 0 900 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;margin:16px auto;display:block;">
+    <rect x="10" y="5" width="880" height="120" rx="8" fill="#1a1e2e" stroke="#30363d"/>
+    <text x="30" y="30" fill="#e6edf3" font-size="12" font-weight="600">Training Configuration — Qwen 2.5 14B (Profiling Run)</text>
+    <text x="30" y="53" fill="#8b949e" font-size="11">LoRA: r=16, alpha=32, targets=[q, k, v, o]_proj, dropout=0.05</text>
+    <text x="30" y="73" fill="#8b949e" font-size="11">Optimizer: AdamW, lr=2e-4 (cosine), warmup=3%, weight_decay=0.01</text>
+    <text x="30" y="93" fill="#8b949e" font-size="11">Training: 1 epoch, batch_size=1/GPU, max_grad_norm=1.0, BF16 + SDPA, gradient checkpointing</text>
+    <text x="30" y="113" fill="#8b949e" font-size="11">Profiler: enabled (steps 10-20), output: /mnt/data/qwen2.5-14b-lora-adapter/profiler</text>
+  </svg>
+</section>
+
+<!-- 2. Profiler -->
+<section id="profiler">
+  <h2><span class="step-num">2</span>PyTorch Profiler Analysis</h2>
+  <p>A 1-epoch profiling run captures kernel execution, operator timings, memory allocation, and communication patterns across steps 10-20. Visualized in TensorBoard via the PyTorch Profiler plugin.</p>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="value green">98.8%</div>
+      <div class="label">GPU Utilization</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">47.4%</div>
+      <div class="label">SM Efficiency</div>
+    </div>
+    <div class="stat-card">
+      <div class="value orange">98.8%</div>
+      <div class="label">Time in Kernels</div>
+    </div>
+    <div class="stat-card">
+      <div class="value purple">37.4 GB</div>
+      <div class="label">Peak GPU Memory</div>
+    </div>
+  </div>
+
+  <div class="img-grid">
+    <div class="img-card">
+      <img src="qwen4.png" alt="Profiler overview" onclick="openLightbox(this)">
+      <div class="caption">Profiler overview — GPU summary (98.76% utilization, 47.37% SM efficiency), execution breakdown showing 98.77% kernel time, step time breakdown across steps 12-21</div>
+    </div>
+  </div>
+
+  <div class="img-grid">
+    <div class="img-card">
+      <img src="qwen1.png" alt="GPU Kernel view" onclick="openLightbox(this)">
+      <div class="caption">GPU Kernel view — CUDA kernels sorted by total time with tensor core utilization. Top kernels: aten::mm (GEMM), nccl broadcast/allreduce, softmax, and element-wise operations</div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Memory -->
+<section id="memory">
+  <h2><span class="step-num">3</span>GPU Memory Analysis</h2>
+  <p>Peak GPU memory usage is 37,394 MB (~37.4 GB) out of 44.6 GB available on the L40S — approximately 84% utilization. This leaves limited headroom, confirming that batch_size=1 is the correct choice and larger models would OOM.</p>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="value orange">37.4 GB</div>
+      <div class="label">Peak GPU Memory</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">44.6 GB</div>
+      <div class="label">Available VRAM</div>
+    </div>
+    <div class="stat-card">
+      <div class="value green">84%</div>
+      <div class="label">VRAM Utilization</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">0.5 MB</div>
+      <div class="label">Peak CPU Memory</div>
+    </div>
+  </div>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="qwen5.png" alt="GPU Memory view" onclick="openLightbox(this)">
+      <div class="caption">GPU memory timeline — peak usage 37,394 MB with periodic allocation/deallocation pattern from gradient checkpointing. Allocated memory oscillates between ~33-39 GB per step.</div>
+    </div>
+    <div class="img-card">
+      <img src="qwen6.png" alt="CPU Memory view" onclick="openLightbox(this)">
+      <div class="caption">CPU memory timeline — negligible usage (0.5 MB peak). CheckpointFunctionBackward operations visible from gradient checkpointing, confirming recomputation strategy.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Monitoring -->
+<section id="monitoring">
+  <h2><span class="step-num">4</span>Cluster Monitoring</h2>
+  <p>GPU utilization, memory, PCIe bandwidth, power consumption, and clock speeds from the Nebius Cloud Dashboard during the Qwen 2.5 14B profiling run.</p>
+
+  <div class="img-grid">
+    <div class="img-card">
+      <img src="qwen.png" alt="GPU metrics overview" onclick="openLightbox(this)">
+      <div class="caption">Nebius Cloud Dashboard — GPU utilization (near 100%), memory utilization (~80%), free/used/total/reserved frame buffer across both L40S nodes during training</div>
+    </div>
+  </div>
+
+  <div class="img-grid">
+    <div class="img-card">
+      <img src="qwen0.png" alt="PCIe and power metrics" onclick="openLightbox(this)">
+      <div class="caption">PCIe RX/TX bandwidth, SM/memory clocks, clock throttle reasons, power usage (~250W sustained), and total energy consumption during training</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. MLflow -->
+<section id="mlflow">
+  <h2><span class="step-num">5</span>MLflow Experiment Tracking</h2>
+  <p>MLflow tracks the <code>qwen2.5-14b-lora</code> experiment separately from the Llama runs. Learning rate (cosine decay) and per-step training loss are logged automatically from rank 0.</p>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="qwen3.png" alt="MLflow experiment list" onclick="openLightbox(this)">
+      <div class="caption">MLflow experiments — qwen2.5-14b-lora experiment with profiling run (able-sponge-647), alongside the existing llama-3.1-8b-lora experiment</div>
+    </div>
+    <div class="img-card">
+      <img src="qwen2.png" alt="MLflow metrics" onclick="openLightbox(this)">
+      <div class="caption">MLflow model metrics — learning rate (cosine decay over ~800 steps) and per-step training loss showing typical noisy convergence pattern</div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <p>Behnam Hajian &middot; Qwen 2.5 14B LoRA Fine-Tuning on Nebius Soperator &middot; May 2026</p>
+  <p><a href="https://github.com/bhajian/training-task-soperator">github.com/bhajian/training-task-soperator</a></p>
+</footer>
+
+<script>
+function openLightbox(img) {
+  document.getElementById('lightbox-img').src = img.src;
+  document.getElementById('lightbox').classList.add('active');
+}
+</script>
+
+</body>
+</html>
