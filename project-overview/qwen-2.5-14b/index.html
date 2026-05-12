@@ -242,6 +242,7 @@
     <li><a href="#memory">GPU Memory Analysis</a></li>
     <li><a href="#monitoring">Cluster Monitoring</a></li>
     <li><a href="#mlflow">MLflow Experiment Tracking</a></li>
+    <li><a href="#conclusion">Conclusion & Architectural Decisions</a></li>
   </ol>
 </nav>
 
@@ -384,6 +385,44 @@
       <img src="qwen2.png" alt="MLflow metrics" onclick="openLightbox(this)">
       <div class="caption">MLflow model metrics — learning rate (cosine decay over ~800 steps) and per-step training loss showing typical noisy convergence pattern</div>
     </div>
+  </div>
+</section>
+
+<!-- 6. Conclusion -->
+<section id="conclusion">
+  <h2><span class="step-num">6</span>Conclusion & Architectural Decisions</h2>
+  <p>This profiling run validates that Qwen 2.5 14B trains successfully on the same 2x L40S cluster used for Llama 3.1 8B, with no code changes — only a config swap. Several architectural decisions made this possible:</p>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr;gap:20px;display:grid;margin:20px 0">
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why 14B Is the Sweet Spot</h3>
+      <p style="font-size:0.95rem">Qwen 2.5 14B at ~29 GB in BF16 leaves ~19 GB for activations, gradients, and LoRA parameters on a 48 GB L40S. Peak memory hit 37.4 GB (84% VRAM) — tight but stable with gradient checkpointing and batch_size=1. Going larger (e.g., 32B at ~64 GB) would exceed VRAM for weights alone. 14B is the practical ceiling for full BF16 LoRA on L40S without quantization.</p>
+    </div>
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why Batch Size 1?</h3>
+      <p style="font-size:0.95rem">With 84% VRAM utilization at batch_size=1, increasing to 2 would push memory past the 48 GB limit and cause OOM. The profiler confirms this: the allocation/deallocation pattern from gradient checkpointing already swings between ~33-39 GB per step. Batch_size=2 would roughly double activation memory, exceeding available VRAM. Effective batch size is still 2 across the cluster (1 per GPU x 2 nodes).</p>
+    </div>
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why Profile Before Full Training?</h3>
+      <p style="font-size:0.95rem">A 14B model on 48 GB GPUs operates near the memory cliff. Running a 1-epoch profiling pass first confirms: (1) the model fits in VRAM without OOM, (2) GPU utilization is high (98.8%), (3) gradient checkpointing works correctly, and (4) NCCL communication isn't a bottleneck. This avoids wasting hours on a multi-epoch run that crashes at step 500 due to a memory spike.</p>
+    </div>
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why Same LoRA Config as Llama?</h3>
+      <p style="font-size:0.95rem">Qwen2 and Llama use identical attention module names (q_proj, k_proj, v_proj, o_proj), so the same LoRA target configuration works for both architectures. Keeping rank=16 and alpha=32 across models enables fair comparison and simplifies the config-driven pipeline — the only differences are model_id, output_dir, batch_size, and mlflow_experiment.</p>
+    </div>
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why Gradient Checkpointing Is Critical</h3>
+      <p style="font-size:0.95rem">The CPU memory view shows CheckpointFunctionBackward operations — proof that gradient checkpointing is recomputing activations during the backward pass instead of storing them. Without this, a 14B model would need to cache all intermediate activations across 40+ transformer layers, easily exceeding 48 GB. Gradient checkpointing trades ~30% more compute for ~60% less activation memory — essential at this model size.</p>
+    </div>
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why DDP Still Works at 14B</h3>
+      <p style="font-size:0.95rem">With LoRA, only adapter weights (~100 MB for 14B) are communicated via NCCL all-reduce — the 29 GB frozen model is never synchronized. The profiler shows communication at only 0.003% of step time, confirming that Ethernet is not a bottleneck even with a model nearly 2x larger. FSDP would be counterproductive here: sharding a frozen model across Ethernet nodes would add constant parameter-gathering overhead with no benefit.</p>
+    </div>
+  </div>
+
+  <div class="result-highlight">
+    <h3>Key Takeaways</h3>
+    <p style="color: var(--text); margin-bottom: 0;">Qwen 2.5 14B achieves 98.8% GPU utilization on 2x L40S with LoRA DDP over Ethernet — validating that the same infrastructure scales from 8B to 14B models with only a config change. Peak VRAM at 84% confirms 14B is the practical ceiling for full BF16 training on L40S. For larger models, quantized training (QLoRA with 4-bit base weights) or additional GPU nodes would be required.</p>
   </div>
 </section>
 
