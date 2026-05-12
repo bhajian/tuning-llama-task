@@ -4,8 +4,8 @@ Fine-tune LLMs (Llama 3.1 8B, Qwen 2.5 14B) with LoRA across 2 nodes (1x L40S ea
 
 ### Project Reports
 
-- [Llama 3.1 8B — Training, Inference & Evaluation Report](https://htmlpreview.github.io/?https://github.com/bhajian/training-task-soperator/blob/qwen2.5-14b/project-overview/llama-3.1-8b/index.html)
-- [Qwen 2.5 14B — Profiling & Training Report](https://htmlpreview.github.io/?https://github.com/bhajian/training-task-soperator/blob/qwen2.5-14b/project-overview/qwen-2.5-14b/index.html)
+- [Llama 3.1 8B — Training, Inference & Evaluation Report](https://htmlpreview.github.io/?https://github.com/bhajian/training-task-soperator/blob/qweb2.5-14b/project-overview/llama-3.1-8b/index.html)
+- [Qwen 2.5 14B — Profiling & Training Report](https://htmlpreview.github.io/?https://github.com/bhajian/training-task-soperator/blob/qweb2.5-14b/project-overview/qwen-2.5-14b/index.html)
 
 ## Prerequisites
 
