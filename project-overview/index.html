@@ -270,219 +270,24 @@
 
   <!-- Kubernetes Stack Architecture -->
   <h3>Kubernetes Stack</h3>
-  <svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;margin:16px auto;display:block;">
-    <defs>
-      <marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#8b949e"/></marker>
-    </defs>
-    <!-- Training Frameworks -->
-    <rect x="560" y="10" width="330" height="100" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="725" y="32" text-anchor="middle" fill="#8b949e" font-size="11">Training Frameworks</text>
-    <rect x="575" y="42" width="90" height="30" rx="4" fill="#161b22" stroke="#58a6ff"/>
-    <text x="620" y="62" text-anchor="middle" fill="#e6edf3" font-size="11" font-weight="600">PyTorch</text>
-    <rect x="675" y="42" width="65" height="30" rx="4" fill="#161b22" stroke="#58a6ff"/>
-    <text x="707" y="62" text-anchor="middle" fill="#e6edf3" font-size="11" font-weight="600">PEFT</text>
-    <rect x="750" y="42" width="125" height="30" rx="4" fill="#161b22" stroke="#58a6ff"/>
-    <text x="812" y="62" text-anchor="middle" fill="#e6edf3" font-size="11" font-weight="600">Transformers</text>
-    <rect x="575" y="78" width="90" height="26" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="620" y="95" text-anchor="middle" fill="#8b949e" font-size="10">torchrun</text>
-    <rect x="675" y="78" width="65" height="26" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="707" y="95" text-anchor="middle" fill="#8b949e" font-size="10">DDP</text>
-    <rect x="750" y="78" width="125" height="26" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="812" y="95" text-anchor="middle" fill="#8b949e" font-size="10">NCCL over TCP</text>
-    <!-- Arrow from frameworks to Soperator -->
-    <line x1="560" y1="60" x2="470" y2="60" stroke="#8b949e" stroke-width="2" marker-end="url(#ah)"/>
-
-    <!-- Observability -->
-    <rect x="10" y="10" width="200" height="170" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="110" y="32" text-anchor="middle" fill="#8b949e" font-size="11">Observability</text>
-    <rect x="25" y="42" width="170" height="30" rx="4" fill="#161b22" stroke="#d29922"/>
-    <text x="110" y="62" text-anchor="middle" fill="#e6edf3" font-size="11" font-weight="600">MLflow (PVC)</text>
-    <rect x="25" y="80" width="170" height="30" rx="4" fill="#161b22" stroke="#d29922"/>
-    <text x="110" y="100" text-anchor="middle" fill="#e6edf3" font-size="11" font-weight="600">TensorBoard</text>
-    <rect x="25" y="118" width="80" height="26" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="65" y="135" text-anchor="middle" fill="#8b949e" font-size="10">Prometheus</text>
-    <rect x="115" y="118" width="80" height="26" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="155" y="135" text-anchor="middle" fill="#8b949e" font-size="10">Grafana</text>
-    <text x="110" y="168" text-anchor="middle" fill="#8b949e" font-size="9" font-style="italic">namespace: mlflow</text>
-
-    <!-- Soperator / Slurm -->
-    <rect x="260" y="20" width="210" height="90" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
-    <text x="365" y="48" text-anchor="middle" fill="#58a6ff" font-size="15" font-weight="700">Soperator</text>
-    <text x="365" y="68" text-anchor="middle" fill="#e6edf3" font-size="12">Slurm on Kubernetes</text>
-    <text x="365" y="86" text-anchor="middle" fill="#8b949e" font-size="10">FluxCD + HelmRelease + NodeSet CRD</text>
-    <!-- Arrow down to Slurm Components -->
-    <line x1="365" y1="110" x2="365" y2="140" stroke="#8b949e" stroke-width="2" marker-end="url(#ah)"/>
-    <!-- Arrow from observability to Soperator -->
-    <line x1="210" y1="60" x2="255" y2="60" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="6,3"/>
-
-    <!-- GPU Stack -->
-    <rect x="10" y="210" width="200" height="100" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="110" y="232" text-anchor="middle" fill="#8b949e" font-size="11">GPU Stack</text>
-    <rect x="25" y="244" width="170" height="26" rx="4" fill="#161b22" stroke="#3fb950"/>
-    <text x="110" y="262" text-anchor="middle" fill="#e6edf3" font-size="10">NVIDIA GPU Operator</text>
-    <rect x="25" y="276" width="80" height="24" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="65" y="293" text-anchor="middle" fill="#8b949e" font-size="9">DCGM</text>
-    <rect x="115" y="276" width="80" height="24" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="155" y="293" text-anchor="middle" fill="#8b949e" font-size="9">Drivers</text>
-
-    <!-- Slurm Daemons -->
-    <rect x="240" y="148" width="290" height="76" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="385" y="168" text-anchor="middle" fill="#8b949e" font-size="11">Slurm Daemons</text>
-    <rect x="255" y="178" width="65" height="26" rx="4" fill="#161b22" stroke="#bc8cff"/>
-    <text x="287" y="195" text-anchor="middle" fill="#e6edf3" font-size="10">slurmctld</text>
-    <rect x="328" y="178" width="52" height="26" rx="4" fill="#161b22" stroke="#bc8cff"/>
-    <text x="354" y="195" text-anchor="middle" fill="#e6edf3" font-size="10">slurmd</text>
-    <rect x="388" y="178" width="62" height="26" rx="4" fill="#161b22" stroke="#bc8cff"/>
-    <text x="419" y="195" text-anchor="middle" fill="#e6edf3" font-size="10">slurmdbd</text>
-    <rect x="458" y="178" width="58" height="26" rx="4" fill="#161b22" stroke="#bc8cff"/>
-    <text x="487" y="195" text-anchor="middle" fill="#e6edf3" font-size="10">munge</text>
-
-    <!-- Shared Storage -->
-    <rect x="560" y="148" width="160" height="76" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="640" y="168" text-anchor="middle" fill="#8b949e" font-size="11">Shared Storage</text>
-    <rect x="575" y="178" width="130" height="26" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="640" y="196" text-anchor="middle" fill="#e6edf3" font-size="10">NFS /mnt/data (1 TiB)</text>
-
-    <!-- Orchestration Platform Bar -->
-    <rect x="10" y="340" width="880" height="44" rx="6" fill="#1a3a6e"/>
-    <text x="240" y="367" text-anchor="middle" fill="#e6edf3" font-size="15" font-weight="700">Orchestration Platform</text>
-    <text x="780" y="367" text-anchor="middle" fill="#e6edf3" font-size="13" font-weight="600">Kubernetes 1.32</text>
-
-    <!-- Infrastructure / Nodes -->
-    <rect x="10" y="400" width="880" height="150" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="450" y="420" text-anchor="middle" fill="#8b949e" font-size="11">Infrastructure Nodes · eu-north1 · Nebius Cloud</text>
-
-    <!-- GPU Node worker-0 -->
-    <rect x="30" y="430" width="210" height="70" rx="6" fill="#161b22" stroke="#3fb950"/>
-    <text x="135" y="449" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">GPU Worker 0</text>
-    <rect x="45" y="457" width="80" height="18" rx="3" fill="#0d1117" stroke="#3fb950" stroke-width="0.5"/>
-    <text x="85" y="470" text-anchor="middle" fill="#e6edf3" font-size="9">NVIDIA L40S</text>
-    <text x="135" y="490" text-anchor="middle" fill="#8b949e" font-size="8">gpu-l40s-d · 16 vCPU · 96 GB · slurmd</text>
-
-    <!-- Ethernet -->
-    <rect x="255" y="452" width="70" height="26" rx="4" fill="#161b22" stroke="#8b949e"/>
-    <text x="290" y="469" text-anchor="middle" fill="#e6edf3" font-size="9">Ethernet</text>
-    <line x1="240" y1="465" x2="255" y2="465" stroke="#8b949e" stroke-width="1.5"/>
-    <line x1="325" y1="465" x2="340" y2="465" stroke="#8b949e" stroke-width="1.5"/>
-
-    <!-- GPU Node worker-1 -->
-    <rect x="340" y="430" width="210" height="70" rx="6" fill="#161b22" stroke="#3fb950"/>
-    <text x="445" y="449" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">GPU Worker 1</text>
-    <rect x="355" y="457" width="80" height="18" rx="3" fill="#0d1117" stroke="#3fb950" stroke-width="0.5"/>
-    <text x="395" y="470" text-anchor="middle" fill="#e6edf3" font-size="9">NVIDIA L40S</text>
-    <text x="445" y="490" text-anchor="middle" fill="#8b949e" font-size="8">gpu-l40s-d · 16 vCPU · 96 GB · slurmd</text>
-
-    <!-- CPU Nodes group -->
-    <rect x="570" y="430" width="300" height="110" rx="6" fill="#161b22" stroke="#58a6ff" stroke-dasharray="4,2"/>
-    <text x="720" y="449" text-anchor="middle" fill="#58a6ff" font-size="11" font-weight="600">CPU Nodes (cpu-d3)</text>
-
-    <!-- Controller -->
-    <rect x="585" y="458" width="130" height="34" rx="4" fill="#0d1117" stroke="#bc8cff"/>
-    <text x="650" y="473" text-anchor="middle" fill="#e6edf3" font-size="9" font-weight="600">Controller (1x)</text>
-    <text x="650" y="486" text-anchor="middle" fill="#8b949e" font-size="8">4 vCPU · 16 GB · slurmctld</text>
-
-    <!-- Login -->
-    <rect x="725" y="458" width="130" height="34" rx="4" fill="#0d1117" stroke="#58a6ff"/>
-    <text x="790" y="473" text-anchor="middle" fill="#e6edf3" font-size="9" font-weight="600">Login (2x)</text>
-    <text x="790" y="486" text-anchor="middle" fill="#8b949e" font-size="8">32 vCPU · 128 GB · SSH</text>
-
-    <!-- Accounting -->
-    <rect x="585" y="498" width="130" height="34" rx="4" fill="#0d1117" stroke="#d29922"/>
-    <text x="650" y="513" text-anchor="middle" fill="#e6edf3" font-size="9" font-weight="600">Accounting (1x)</text>
-    <text x="650" y="526" text-anchor="middle" fill="#8b949e" font-size="8">8 vCPU · 32 GB · slurmdbd</text>
-
-    <!-- System -->
-    <rect x="725" y="498" width="130" height="34" rx="4" fill="#0d1117" stroke="#30363d"/>
-    <text x="790" y="513" text-anchor="middle" fill="#e6edf3" font-size="9" font-weight="600">System (3x)</text>
-    <text x="790" y="526" text-anchor="middle" fill="#8b949e" font-size="8">8 vCPU · 32 GB · K8s system</text>
-  </svg>
+  <div class="img-card">
+    <img src="overall%20architecture.png" alt="Overall Kubernetes Stack Architecture" onclick="openLightbox(this)">
+  </div>
 
   <!-- Training Architecture -->
   <h3>Training Architecture</h3>
-  <svg viewBox="0 0 900 340" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;margin:16px auto;display:block;">
-    <defs>
-      <marker id="ah2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#8b949e"/></marker>
-    </defs>
-    <!-- sbatch -->
-    <rect x="10" y="40" width="120" height="50" rx="6" fill="#161b22" stroke="#58a6ff"/>
-    <text x="70" y="62" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="600">sbatch</text>
-    <text x="70" y="78" text-anchor="middle" fill="#8b949e" font-size="9">train.sbatch</text>
-    <line x1="130" y1="65" x2="170" y2="65" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah2)"/>
+  <div class="img-card">
+    <img src="training-architecture.png" alt="Training Architecture" onclick="openLightbox(this)">
+  </div>
 
-    <!-- Slurm Controller -->
-    <rect x="175" y="30" width="130" height="70" rx="6" fill="#161b22" stroke="#bc8cff"/>
-    <text x="240" y="55" text-anchor="middle" fill="#bc8cff" font-size="12" font-weight="600">slurmctld</text>
-    <text x="240" y="72" text-anchor="middle" fill="#8b949e" font-size="9">Job scheduling</text>
-    <text x="240" y="86" text-anchor="middle" fill="#8b949e" font-size="9">2 nodes, 1 GPU each</text>
-
-    <!-- Arrow to torchrun -->
-    <line x1="305" y1="65" x2="350" y2="65" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah2)"/>
-
-    <!-- torchrun -->
-    <rect x="355" y="30" width="120" height="70" rx="6" fill="#161b22" stroke="#d29922"/>
-    <text x="415" y="55" text-anchor="middle" fill="#d29922" font-size="12" font-weight="600">torchrun</text>
-    <text x="415" y="72" text-anchor="middle" fill="#8b949e" font-size="9">DDP launcher</text>
-    <text x="415" y="86" text-anchor="middle" fill="#8b949e" font-size="9">NCCL backend</text>
-
-    <!-- Arrows to workers -->
-    <line x1="475" y1="50" x2="530" y2="50" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah2)"/>
-    <line x1="475" y1="80" x2="530" y2="80" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah2)"/>
-
-    <!-- Worker 0 -->
-    <rect x="535" y="14" width="350" height="56" rx="6" fill="#161b22" stroke="#3fb950"/>
-    <text x="555" y="36" fill="#3fb950" font-size="11" font-weight="600">worker-0</text>
-    <rect x="640" y="24" width="80" height="22" rx="3" fill="#0d1117" stroke="#3fb950" stroke-width="0.5"/>
-    <text x="680" y="39" text-anchor="middle" fill="#e6edf3" font-size="9">L40S GPU</text>
-    <text x="555" y="58" fill="#8b949e" font-size="9">finetune.py (rank 0) · LoRA · BF16 · gradient ckpt</text>
-
-    <!-- Worker 1 -->
-    <rect x="535" y="78" width="350" height="40" rx="6" fill="#161b22" stroke="#3fb950"/>
-    <text x="555" y="100" fill="#3fb950" font-size="11" font-weight="600">worker-1</text>
-    <rect x="640" y="86" width="80" height="22" rx="3" fill="#0d1117" stroke="#3fb950" stroke-width="0.5"/>
-    <text x="680" y="101" text-anchor="middle" fill="#e6edf3" font-size="9">L40S GPU</text>
-    <text x="730" y="101" fill="#8b949e" font-size="9">finetune.py (rank 1)</text>
-
-    <!-- NCCL arrow between workers -->
-    <line x1="880" y1="70" x2="880" y2="84" stroke="#d29922" stroke-width="2"/>
-    <text x="894" y="80" fill="#d29922" font-size="8">NCCL</text>
-
-    <!-- Config -->
-    <rect x="10" y="130" width="160" height="60" rx="6" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="90" y="150" text-anchor="middle" fill="#8b949e" font-size="11">Config</text>
-    <text x="90" y="166" text-anchor="middle" fill="#e6edf3" font-size="10">YAML + CLI overrides</text>
-    <text x="90" y="180" text-anchor="middle" fill="#8b949e" font-size="9">default.yaml / profile_run.yaml</text>
-
-    <!-- Dataset -->
-    <rect x="190" y="130" width="160" height="60" rx="6" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="270" y="150" text-anchor="middle" fill="#8b949e" font-size="11">Dataset (NFS)</text>
-    <text x="270" y="166" text-anchor="middle" fill="#e6edf3" font-size="10">Alpaca (46,801 train)</text>
-    <text x="270" y="180" text-anchor="middle" fill="#8b949e" font-size="9">Packed sequences, 2048 ctx</text>
-
-    <!-- Outputs -->
-    <rect x="370" y="130" width="200" height="60" rx="6" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="470" y="150" text-anchor="middle" fill="#8b949e" font-size="11">Outputs (NFS)</text>
-    <text x="470" y="166" text-anchor="middle" fill="#e6edf3" font-size="10">LoRA adapter (~52 MB)</text>
-    <text x="470" y="180" text-anchor="middle" fill="#8b949e" font-size="9">Per-epoch ckpts + best-adapter</text>
-
-    <!-- MLflow -->
-    <rect x="590" y="130" width="140" height="60" rx="6" fill="#161b22" stroke="#d29922"/>
-    <text x="660" y="150" text-anchor="middle" fill="#d29922" font-size="11" font-weight="600">MLflow</text>
-    <text x="660" y="166" text-anchor="middle" fill="#e6edf3" font-size="10">K8s ClusterIP</text>
-    <text x="660" y="180" text-anchor="middle" fill="#8b949e" font-size="9">Loss, LR, hyperparams</text>
-
-    <!-- TensorBoard -->
-    <rect x="750" y="130" width="140" height="60" rx="6" fill="#161b22" stroke="#d29922"/>
-    <text x="820" y="150" text-anchor="middle" fill="#d29922" font-size="11" font-weight="600">TensorBoard</text>
-    <text x="820" y="166" text-anchor="middle" fill="#e6edf3" font-size="10">K8s ClusterIP</text>
-    <text x="820" y="180" text-anchor="middle" fill="#8b949e" font-size="9">Profiler traces</text>
-
-    <!-- Training details -->
-    <rect x="10" y="210" width="880" height="120" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="30" y="235" fill="#e6edf3" font-size="12" font-weight="600">Training Configuration</text>
-    <text x="30" y="258" fill="#8b949e" font-size="11">LoRA: r=16, alpha=32, targets=[q, k, v, o]_proj, dropout=0.05</text>
-    <text x="30" y="278" fill="#8b949e" font-size="11">Optimizer: AdamW, lr=2e-4 (cosine), warmup=3%, weight_decay=0.01</text>
-    <text x="30" y="298" fill="#8b949e" font-size="11">Training: 5 epochs, batch_size=2/GPU, max_grad_norm=1.0, BF16 + SDPA</text>
-    <text x="30" y="318" fill="#8b949e" font-size="11">Result: Completed in 1h 4m (Job 35), loss decreased across all epochs</text>
+  <!-- Training Configuration -->
+  <svg viewBox="0 0 900 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;margin:16px auto;display:block;">
+    <rect x="10" y="5" width="880" height="120" rx="8" fill="#1a1e2e" stroke="#30363d"/>
+    <text x="30" y="30" fill="#e6edf3" font-size="12" font-weight="600">Training Configuration</text>
+    <text x="30" y="53" fill="#8b949e" font-size="11">LoRA: r=16, alpha=32, targets=[q, k, v, o]_proj, dropout=0.05</text>
+    <text x="30" y="73" fill="#8b949e" font-size="11">Optimizer: AdamW, lr=2e-4 (cosine), warmup=3%, weight_decay=0.01</text>
+    <text x="30" y="93" fill="#8b949e" font-size="11">Training: 5 epochs, batch_size=2/GPU, max_grad_norm=1.0, BF16 + SDPA</text>
+    <text x="30" y="113" fill="#8b949e" font-size="11">Result: Completed in 1h 4m (Job 35), loss decreased across all epochs</text>
   </svg>
 
   <!-- Inference Architecture -->
