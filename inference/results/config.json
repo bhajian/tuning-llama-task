@@ -1,6 +1,6 @@
 {
-  "base_url": "http://X:8000",
-  "lora_url": "http://Y:8000",
+  "base_url": "http://89.169.122.101:8000",
+  "lora_url": "http://89.169.122.72:8000",
   "num_samples": 1000,
   "max_tokens": 512,
   "temperature": 0.1,

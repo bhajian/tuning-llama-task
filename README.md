@@ -74,6 +74,22 @@ kubectl port-forward svc/tensorboard -n mlflow 6006:6006
 # Open http://localhost:6006 → select PYTORCH_PROFILER from the dropdown
 ```
 
+### Step 6: Access Grafana (cluster monitoring)
+
+Grafana is deployed automatically by Soperator in the `monitoring-system` namespace. It provides dashboards for cluster health, job timeline, NFS I/O, and node-level CPU/memory/network metrics.
+
+```bash
+kubectl port-forward svc/metrics-grafana -n monitoring-system 3000:80
+# Open http://localhost:3000
+```
+
+Key dashboards:
+- **Cluster Health & Overview** — running/finished jobs, job state timeline, per-user/partition breakdown
+- **NFS** — disk read/write, NFSd packets, cache hit rates, RPC operations, connections
+- **Node Exporter** — CPU, memory, network traffic, disk usage per node
+
+Note: GPU metrics (DCGM) require Soperator worker pods to be running. During inference mode (workers scaled to 0), GPU stats are not available in Grafana — use the Nebius Cloud Console instead.
+
 ---
 
 ## Important: GPU Ownership

@@ -462,8 +462,9 @@ terraform init && terraform apply
 <!-- 5. Cluster Monitoring -->
 <section id="monitoring">
   <h2><span class="step-num">5</span>Cluster Monitoring</h2>
-  <p>Nebius Cloud dashboard provides real-time metrics for all cluster nodes during training.</p>
+  <p>Monitoring is available at two levels: the Nebius Cloud dashboard (infrastructure-level GPU/CPU/network metrics) and Grafana deployed by Soperator (cluster health, job timelines, NFS I/O, node metrics).</p>
 
+  <h3>Nebius Cloud Dashboard</h3>
   <div class="img-grid two">
     <div class="img-card">
       <img src="2.png" alt="Basic metrics" onclick="openLightbox(this)">
@@ -494,6 +495,24 @@ terraform init && terraform apply
     <div class="img-card">
       <img src="rx-tx.png" alt="PCIe RX/TX" onclick="openLightbox(this)">
       <div class="caption">PCIe RX/TX bandwidth during training — periodic pattern from NCCL collective operations</div>
+    </div>
+  </div>
+
+  <h3>Grafana (Soperator)</h3>
+  <p>Grafana is deployed by Soperator in the <code>monitoring-system</code> namespace. Access via: <code>kubectl port-forward svc/metrics-grafana -n monitoring-system 3000:80</code></p>
+
+  <div class="img-grid three">
+    <div class="img-card">
+      <img src="graphana1.png" alt="Grafana Cluster Health" onclick="openLightbox(this)">
+      <div class="caption">Cluster Health & Overview — job timeline, running/completed/failed jobs, per-user breakdown</div>
+    </div>
+    <div class="img-card">
+      <img src="graphana2.png" alt="Grafana NFS" onclick="openLightbox(this)">
+      <div class="caption">NFS dashboard — disk read/write throughput, NFSd packets, cache stats, RPC operations</div>
+    </div>
+    <div class="img-card">
+      <img src="graphana3.png" alt="Grafana Node Exporter" onclick="openLightbox(this)">
+      <div class="caption">Node Exporter — CPU usage, memory, network traffic, disk space per node</div>
     </div>
   </div>
 </section>
