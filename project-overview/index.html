@@ -259,6 +259,7 @@
     <li><a href="#inference">Inference Deployment</a></li>
     <li><a href="#evaluation">Evaluation Results</a></li>
     <li><a href="#future">Future Improvements</a></li>
+    <li><a href="#conclusion">Conclusion & Architectural Decisions</a></li>
     <li><a href="#repos">Repositories</a></li>
   </ol>
 </nav>
@@ -705,9 +706,47 @@ terraform init && terraform apply
   </div>
 </section>
 
-<!-- 11. Repos -->
+<!-- 11. Conclusion -->
+<section id="conclusion">
+  <h2><span class="step-num">11</span>Conclusion & Architectural Decisions</h2>
+  <p>This project demonstrates an end-to-end pipeline for distributed LoRA fine-tuning on Nebius cloud infrastructure — from cluster provisioning through training, serving, and automated evaluation. Several architectural decisions shaped the design:</p>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr;gap:20px;display:grid;margin:20px 0">
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why Soperator (Slurm-on-K8s)?</h3>
+      <p style="font-size:0.95rem">Running Slurm inside Kubernetes via Soperator provides the job scheduling semantics that ML workloads need (multi-node GPU allocation, job queuing, gang scheduling) without leaving the Kubernetes ecosystem. This avoids managing bare-metal Slurm clusters while keeping Kubernetes-native tooling for everything else — MLflow, TensorBoard, vLLM inference, and Grafana all deploy as standard K8s resources alongside Slurm workers.</p>
+    </div>
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why LoRA Instead of Full Fine-Tuning?</h3>
+      <p style="font-size:0.95rem">With only 2x L40S (48 GB each), full fine-tuning of even an 8B model would require aggressive sharding (FSDP/DeepSpeed ZeRO-3) and would be impractically slow over Ethernet. LoRA reduces trainable parameters to ~52 MB, making DDP over TCP viable — each GPU holds the full frozen model plus a small adapter, and only adapter gradients are communicated via NCCL all-reduce. This keeps the Ethernet interconnect from becoming a bottleneck.</p>
+    </div>
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why DDP Over Ethernet (Not FSDP)?</h3>
+      <p style="font-size:0.95rem">The cluster uses standard Ethernet, not InfiniBand. With LoRA, the all-reduce payload is tiny (~52 MB per step), so DDP communication overhead is negligible even over TCP. FSDP would shard model parameters across nodes, requiring constant high-bandwidth parameter gathering — exactly the pattern where Ethernet becomes a bottleneck. DDP with LoRA is the natural fit for Ethernet-connected GPU clusters.</p>
+    </div>
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why Shared GPU Ownership?</h3>
+      <p style="font-size:0.95rem">With only 2 GPUs, dedicating separate GPUs to training and inference isn't possible. Instead, the system switches modes: Soperator workers hold GPUs during training, then scale to 0 to release them for vLLM inference pods. FluxCD reconciliation must be suspended during inference to prevent the slurm-operator from respawning workers. This is a deliberate trade-off — operational simplicity over running both simultaneously — appropriate for a 2-GPU demo cluster.</p>
+    </div>
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why Config-Driven Training?</h3>
+      <p style="font-size:0.95rem">All hyperparameters live in YAML config files rather than being hardcoded or passed as CLI arguments. This makes experiments reproducible — each run's resolved config is saved alongside the adapter — and enables easy model switching. The same training script handles Llama 3.1 8B and Qwen 2.5 14B simply by pointing to a different config file, with no code changes required.</p>
+    </div>
+    <div class="img-card" style="padding:1.5rem">
+      <h3 style="color:var(--accent);margin-top:0">Why Claude Sonnet as Judge?</h3>
+      <p style="font-size:0.95rem">Automated metrics (ROUGE-L, BERTScore) measure surface and semantic similarity but cannot assess whether a response actually answers the instruction correctly. Using Claude Sonnet via Vertex AI as an impartial binary judge provides a more meaningful accuracy signal — and avoids the circular problem of using the same model family for both generation and evaluation. The 90/10 train/eval split ensures the judge evaluates on samples never seen during training.</p>
+    </div>
+  </div>
+
+  <div class="result-highlight">
+    <h3>Key Takeaways</h3>
+    <p style="color: var(--text); margin-bottom: 0;">LoRA fine-tuning on a 2-node Ethernet cluster is practical and effective: 97.9% GPU utilization, 1-hour training time, and a +34.1% accuracy improvement over the base model. The Soperator + Kubernetes architecture provides a clean separation between training (Slurm) and inference (K8s Deployments) while sharing the same GPU pool. The pipeline generalizes to larger models — Qwen 2.5 14B trains on the same cluster with only a config change.</p>
+  </div>
+</section>
+
+<!-- 12. Repos -->
 <section id="repos">
-  <h2><span class="step-num">11</span>Repositories</h2>
+  <h2><span class="step-num">12</span>Repositories</h2>
   <table>
     <tr><th>Repository</th><th>Description</th></tr>
     <tr><td><a href="https://github.com/bhajian/training-task-soperator" style="color:var(--accent)">training-task-soperator</a></td><td>Training code, inference configs, evaluation notebook, this report</td></tr>
