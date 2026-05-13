@@ -276,6 +276,13 @@
     <img src="overall%20architecture.png" alt="Overall Kubernetes Stack Architecture" onclick="openLightbox(this)">
   </div>
 
+  <!-- Soperator Architecture -->
+  <h3>Soperator (Slurm-on-Kubernetes)</h3>
+  <div class="img-card">
+    <img src="soperator%20architecture.jpg" alt="Soperator Architecture — Slurm operator, login/worker/controller pods, ConfigMaps, Secrets, PVCs" onclick="openLightbox(this)">
+    <div class="caption">Soperator internals — the slurm-operator watches the SlurmCluster CR and reconciles login, worker, and controller pods with shared NFS volumes, munge authentication, and Slurm config</div>
+  </div>
+
   <!-- Training Architecture -->
   <h3>Training Architecture</h3>
   <div class="img-card">
@@ -294,79 +301,34 @@
 
   <!-- Inference Architecture -->
   <h3>Inference Architecture</h3>
-  <svg viewBox="0 0 900 270" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;margin:16px auto;display:block;">
-    <defs>
-      <marker id="ah3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6Z" fill="#8b949e"/></marker>
-      <marker id="ah3r" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6Z" fill="#8b949e"/></marker>
-    </defs>
-    <!-- Client -->
-    <rect x="10" y="40" width="130" height="70" rx="6" fill="#161b22" stroke="#58a6ff"/>
-    <text x="75" y="65" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="600">Client</text>
-    <text x="75" y="82" text-anchor="middle" fill="#8b949e" font-size="9">Jupyter notebook</text>
-    <text x="75" y="95" text-anchor="middle" fill="#8b949e" font-size="9">evaluation.ipynb</text>
+  <div class="img-card">
+    <img src="inference-architecture.png" alt="Inference Architecture — Client, LoadBalancers, vLLM workers, NFS on Kubernetes" onclick="openLightbox(this)">
+    <div class="caption">Inference mode — client connects via LoadBalancers to vLLM on worker-0 (base) and worker-1 (LoRA), both reading models from NFS</div>
+  </div>
 
-    <!-- Arrows to LBs -->
-    <line x1="140" y1="60" x2="200" y2="42" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah3)"/>
-    <line x1="140" y1="90" x2="200" y2="108" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah3)"/>
+  <!-- Evaluation Pipeline -->
+  <svg viewBox="0 0 900 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;margin:16px auto;display:block;">
+    <rect x="10" y="5" width="880" height="85" rx="8" fill="#1a1e2e" stroke="#30363d"/>
+    <text x="30" y="28" fill="#e6edf3" font-size="12" font-weight="600">Evaluation Pipeline (1,000 held-out samples)</text>
+    <rect x="30" y="38" width="200" height="38" rx="4" fill="#161b22" stroke="#bc8cff"/>
+    <text x="130" y="56" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="600">Claude Sonnet Judge</text>
+    <text x="130" y="70" text-anchor="middle" fill="#8b949e" font-size="9">Vertex AI · binary YES/NO</text>
 
-    <!-- LoadBalancer Base -->
-    <rect x="205" y="16" width="130" height="46" rx="6" fill="#161b22" stroke="#d29922"/>
-    <text x="270" y="36" text-anchor="middle" fill="#d29922" font-size="10" font-weight="600">LoadBalancer</text>
-    <text x="270" y="52" text-anchor="middle" fill="#8b949e" font-size="9">vllm-base :8000</text>
-    <line x1="335" y1="39" x2="395" y2="39" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah3)"/>
+    <rect x="250" y="38" width="150" height="38" rx="4" fill="#161b22" stroke="#58a6ff"/>
+    <text x="325" y="56" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="600">ROUGE-L</text>
+    <text x="325" y="70" text-anchor="middle" fill="#8b949e" font-size="9">Surface similarity · CPU</text>
 
-    <!-- LoadBalancer LoRA -->
-    <rect x="205" y="82" width="130" height="46" rx="6" fill="#161b22" stroke="#d29922"/>
-    <text x="270" y="102" text-anchor="middle" fill="#d29922" font-size="10" font-weight="600">LoadBalancer</text>
-    <text x="270" y="118" text-anchor="middle" fill="#8b949e" font-size="9">vllm-lora :8000</text>
-    <line x1="335" y1="105" x2="395" y2="105" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah3)"/>
+    <rect x="420" y="38" width="150" height="38" rx="4" fill="#161b22" stroke="#58a6ff"/>
+    <text x="495" y="56" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="600">BERTScore</text>
+    <text x="495" y="70" text-anchor="middle" fill="#8b949e" font-size="9">Semantic similarity · CPU</text>
 
-    <!-- vLLM Base -->
-    <rect x="400" y="10" width="220" height="60" rx="6" fill="#161b22" stroke="#3fb950"/>
-    <text x="510" y="32" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">vLLM (Base)</text>
-    <text x="510" y="48" text-anchor="middle" fill="#e6edf3" font-size="10">Llama 3.1 8B</text>
-    <text x="510" y="62" text-anchor="middle" fill="#8b949e" font-size="9">GPU Node worker-0 · L40S</text>
+    <rect x="590" y="38" width="150" height="38" rx="4" fill="#161b22" stroke="#30363d"/>
+    <text x="665" y="56" text-anchor="middle" fill="#e6edf3" font-size="10">Throughput</text>
+    <text x="665" y="70" text-anchor="middle" fill="#8b949e" font-size="9">tok/s, latency, p95</text>
 
-    <!-- vLLM LoRA -->
-    <rect x="400" y="78" width="220" height="60" rx="6" fill="#161b22" stroke="#3fb950"/>
-    <text x="510" y="98" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">vLLM (LoRA)</text>
-    <text x="510" y="114" text-anchor="middle" fill="#e6edf3" font-size="10">Llama 3.1 8B + LoRA adapter</text>
-    <text x="510" y="128" text-anchor="middle" fill="#8b949e" font-size="9">GPU Node worker-1 · L40S</text>
-
-    <!-- NFS -->
-    <rect x="670" y="36" width="130" height="75" rx="6" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="735" y="56" text-anchor="middle" fill="#8b949e" font-size="10">NFS /mnt/data</text>
-    <text x="735" y="74" text-anchor="middle" fill="#e6edf3" font-size="9">Llama-3.1-8B/</text>
-    <text x="735" y="90" text-anchor="middle" fill="#e6edf3" font-size="9">lora-adapter/</text>
-    <text x="735" y="104" text-anchor="middle" fill="#8b949e" font-size="8">hostPath mount</text>
-    <line x1="620" y1="40" x2="665" y2="60" stroke="#8b949e" stroke-width="1" stroke-dasharray="4,3"/>
-    <line x1="620" y1="108" x2="665" y2="90" stroke="#8b949e" stroke-width="1" stroke-dasharray="4,3"/>
-
-    <!-- Namespace label -->
-    <text x="510" y="155" text-anchor="middle" fill="#8b949e" font-size="10" font-style="italic">namespace: inference (Soperator workers scaled to 0)</text>
-
-    <!-- Evaluation -->
-    <rect x="10" y="175" width="880" height="85" rx="8" fill="#1a1e2e" stroke="#30363d"/>
-    <text x="30" y="198" fill="#e6edf3" font-size="12" font-weight="600">Evaluation Pipeline (1,000 held-out samples)</text>
-    <rect x="30" y="208" width="200" height="38" rx="4" fill="#161b22" stroke="#bc8cff"/>
-    <text x="130" y="226" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="600">Claude Sonnet Judge</text>
-    <text x="130" y="240" text-anchor="middle" fill="#8b949e" font-size="9">Vertex AI · binary YES/NO</text>
-
-    <rect x="250" y="208" width="150" height="38" rx="4" fill="#161b22" stroke="#58a6ff"/>
-    <text x="325" y="226" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="600">ROUGE-L</text>
-    <text x="325" y="240" text-anchor="middle" fill="#8b949e" font-size="9">Surface similarity · CPU</text>
-
-    <rect x="420" y="208" width="150" height="38" rx="4" fill="#161b22" stroke="#58a6ff"/>
-    <text x="495" y="226" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="600">BERTScore</text>
-    <text x="495" y="240" text-anchor="middle" fill="#8b949e" font-size="9">Semantic similarity · CPU</text>
-
-    <rect x="590" y="208" width="150" height="38" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="665" y="226" text-anchor="middle" fill="#e6edf3" font-size="10">Throughput</text>
-    <text x="665" y="240" text-anchor="middle" fill="#8b949e" font-size="9">tok/s, latency, p95</text>
-
-    <rect x="760" y="208" width="110" height="38" rx="4" fill="#161b22" stroke="#30363d"/>
-    <text x="815" y="226" text-anchor="middle" fill="#e6edf3" font-size="10">Agreement</text>
-    <text x="815" y="240" text-anchor="middle" fill="#8b949e" font-size="9">Confusion matrix</text>
+    <rect x="760" y="38" width="110" height="38" rx="4" fill="#161b22" stroke="#30363d"/>
+    <text x="815" y="56" text-anchor="middle" fill="#e6edf3" font-size="10">Agreement</text>
+    <text x="815" y="70" text-anchor="middle" fill="#8b949e" font-size="9">Confusion matrix</text>
   </svg>
 
   <table>
