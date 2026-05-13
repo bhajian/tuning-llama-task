@@ -129,6 +129,58 @@ The JSON files are gitignored — only the split script is committed.
 
 ---
 
+## Pre-Training: NCCL Bandwidth Test
+
+Before starting a training run, verify that NCCL communication between nodes is working correctly. This is especially important on Ethernet clusters (no InfiniBand) where misconfigured networking can silently degrade training throughput.
+
+The test runs `all_reduce_perf_mpi` — the same NCCL collective that DDP uses for gradient synchronization — across both nodes and reports bandwidth at various message sizes.
+
+### Run the test
+
+From the login node:
+
+```bash
+sbatch ~/training-task/scripts/nccl_test.sbatch
+```
+
+Monitor the output:
+
+```bash
+tail -f /mnt/data/logs/nccl_test_<jobid>.out
+```
+
+### What to look for
+
+The key column in the output is **busbw (GB/s)** — this is the usable bus bandwidth at each message size.
+
+| Message Size | Expected busbw (GB/s) | Notes |
+|---|---|---|
+| 8 B – 1 KB | ~0.00 | Latency-dominated (~220 μs round-trip) |
+| 1 MB | ~0.46 | Small tensors |
+| 8 MB | ~0.82 | Approaching link saturation |
+| **32 – 64 MB** | **~0.83** | **LoRA gradient range (~50 MB per all-reduce)** |
+| 128 – 512 MB | ~0.85 | Peak bandwidth |
+
+**Pass criteria:**
+- Zero errors (`#wrong = 0` for all rows)
+- Bus bandwidth reaches **0.8+ GB/s** at 32 MB and above
+- Bandwidth plateaus and stays flat (no drops at large sizes)
+
+**If the test fails or shows low bandwidth:**
+- Check that `NCCL_SOCKET_IFNAME=eth0` matches the actual network interface (`ip addr` on workers)
+- Verify `NCCL_IB_DISABLE=1` is set (prevents NCCL from searching for InfiniBand)
+- Check for firewall rules or network policies blocking inter-node traffic
+- Ensure both workers are on the same subnet
+
+### Expected results on this cluster
+
+With 2x L40S over Ethernet (TCP/Socket transport, 2 NCCL channels):
+- **Peak bus bandwidth**: ~0.85 GB/s (~6.8 Gbps)
+- **LoRA gradient sync time**: ~60 ms at 50 MB (negligible vs seconds-long forward/backward pass)
+- **Average bus bandwidth**: ~0.32 GB/s (across all message sizes including latency-dominated small messages)
+
+---
+
 ## Training
 
 ### Configuration
@@ -299,7 +351,18 @@ bash ~/training-task/scripts/setup_env.sh
 srun -N2 --gpus-per-node=1 bash ~/training-task/scripts/check_gpus.sh
 ```
 
-#### 4. Submit training job
+#### 4. Run NCCL bandwidth test
+
+Validate inter-node NCCL communication before training (see [Pre-Training: NCCL Bandwidth Test](#pre-training-nccl-bandwidth-test) for details):
+
+```bash
+sbatch ~/training-task/scripts/nccl_test.sbatch
+tail -f /mnt/data/logs/nccl_test_<jobid>.out
+```
+
+Confirm bus bandwidth reaches 0.8+ GB/s at 32 MB+ message sizes and zero errors.
+
+#### 5. Submit training job
 
 ```bash
 # With default config
@@ -312,7 +375,7 @@ sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/experime
 sbatch ~/training-task/train/train.sbatch ~/training-task/train/configs/profile_run.yaml
 ```
 
-#### 5. Monitor
+#### 6. Monitor
 
 ```bash
 squeue
@@ -320,7 +383,7 @@ tail -f /mnt/data/logs/train_<jobid>.out
 tail -f /mnt/data/logs/train_<jobid>.err
 ```
 
-#### 6. Cancel (if needed)
+#### 7. Cancel (if needed)
 
 ```bash
 scancel <jobid>

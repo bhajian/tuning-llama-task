@@ -252,6 +252,7 @@
     <li><a href="#architecture">Architecture Overview</a></li>
     <li><a href="#infra">Infrastructure Setup</a></li>
     <li><a href="#gpu-verify">GPU Verification</a></li>
+    <li><a href="#nccl-test">NCCL Bandwidth Test</a></li>
     <li><a href="#training">Distributed Training</a></li>
     <li><a href="#monitoring">Cluster Monitoring</a></li>
     <li><a href="#profiler">PyTorch Profiler Analysis</a></li>
@@ -428,9 +429,68 @@ terraform init && terraform apply
   </div>
 </section>
 
-<!-- 4. Training -->
+<!-- 4. NCCL Bandwidth Test -->
+<section id="nccl-test">
+  <h2><span class="step-num">4</span>NCCL Bandwidth Test</h2>
+  <p>Before training, an NCCL bandwidth test validates the inter-node communication path. Since the cluster uses Ethernet (no InfiniBand), all gradient synchronization flows through TCP sockets via NCCL. This pre-flight check confirms the link is healthy and measures usable bandwidth at message sizes relevant to LoRA training.</p>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="value green">0.85 GB/s</div>
+      <div class="label">Peak Bus Bandwidth</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">0.83 GB/s</div>
+      <div class="label">BW at LoRA Gradient Size (50 MB)</div>
+    </div>
+    <div class="stat-card">
+      <div class="value orange">~220 &micro;s</div>
+      <div class="label">Latency Floor</div>
+    </div>
+    <div class="stat-card">
+      <div class="value purple">~60 ms</div>
+      <div class="label">LoRA Gradient Sync Time</div>
+    </div>
+  </div>
+
+  <h3>Bandwidth Results (all_reduce, 2 nodes &times; 1 GPU, TCP/Ethernet)</h3>
+  <table>
+    <tr><th>Message Size</th><th>Time (&micro;s)</th><th>Bus BW (GB/s)</th><th>Relevance</th></tr>
+    <tr><td>8 B</td><td>218</td><td>0.00</td><td>Latency floor</td></tr>
+    <tr><td>1 KB</td><td>259</td><td>0.00</td><td>Latency floor</td></tr>
+    <tr><td>4 KB</td><td>268</td><td>0.02</td><td>Small control messages</td></tr>
+    <tr><td>64 KB</td><td>843</td><td>0.08</td><td>&mdash;</td></tr>
+    <tr><td>256 KB</td><td>1,159</td><td>0.23</td><td>&mdash;</td></tr>
+    <tr><td>1 MB</td><td>2,284</td><td>0.46</td><td>Small tensors</td></tr>
+    <tr><td>4 MB</td><td>5,648</td><td>0.74</td><td>Approaching saturation</td></tr>
+    <tr><td>8 MB</td><td>10,195</td><td>0.82</td><td>Near peak</td></tr>
+    <tr><td style="color:#3fb950;font-weight:600">32 MB</td><td style="color:#3fb950;font-weight:600">40,588</td><td style="color:#3fb950;font-weight:600">0.83</td><td style="color:#3fb950;font-weight:600">LoRA gradient range</td></tr>
+    <tr><td style="color:#3fb950;font-weight:600">64 MB</td><td style="color:#3fb950;font-weight:600">81,233</td><td style="color:#3fb950;font-weight:600">0.83</td><td style="color:#3fb950;font-weight:600">LoRA gradient range</td></tr>
+    <tr><td>128 MB</td><td>158,390</td><td>0.85</td><td>Peak bandwidth</td></tr>
+    <tr><td>256 MB</td><td>316,629</td><td>0.85</td><td>Peak bandwidth</td></tr>
+    <tr><td>512 MB</td><td>650,846</td><td>0.82</td><td>Peak bandwidth</td></tr>
+  </table>
+
+  <div class="result-highlight">
+    <h3>Verdict: Ready to Train</h3>
+    <p style="color: var(--text); margin-bottom: 0;">Peak bus bandwidth of <strong>0.85 GB/s</strong> (~6.8 Gbps) is consistent with TCP socket transport over Ethernet. At the LoRA gradient size (~50 MB), each all-reduce takes <strong>~60 ms</strong> — negligible compared to the seconds-long forward/backward pass. Zero data errors across all message sizes confirm the NCCL data path is correct. The bandwidth plateaus at 8 MB and stays flat through 512 MB, indicating the link is fully saturated with no fragmentation or throttling issues.</p>
+  </div>
+
+  <div class="img-grid two">
+    <div class="img-card">
+      <img src="nccl-test-info.png" alt="NCCL test initialization" onclick="openLightbox(this)">
+      <div class="caption">NCCL test initialization — 2 nodes (worker-0, worker-1), 1 GPU each (L40S), NCCL over TCP/Socket with 2 channels, ring topology</div>
+    </div>
+    <div class="img-card">
+      <img src="nccl-test.png" alt="NCCL bandwidth results" onclick="openLightbox(this)">
+      <div class="caption">all_reduce_perf results — bandwidth sweep from 8B to 512MB, peak bus bandwidth 0.85 GB/s, average 0.32 GB/s, zero errors</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Training -->
 <section id="training">
-  <h2><span class="step-num">4</span>Distributed Training</h2>
+  <h2><span class="step-num">5</span>Distributed Training</h2>
   <p>Training runs as a Slurm batch job using <code>torchrun</code> for DDP across 2 nodes. The LoRA adapter targets q/k/v/o projections with rank 16, trained for 5 epochs on the Alpaca dataset with sequence packing.</p>
 
   <h3>Training Configuration</h3>
@@ -460,9 +520,9 @@ terraform init && terraform apply
   </div>
 </section>
 
-<!-- 5. Cluster Monitoring -->
+<!-- 6. Cluster Monitoring -->
 <section id="monitoring">
-  <h2><span class="step-num">5</span>Cluster Monitoring</h2>
+  <h2><span class="step-num">6</span>Cluster Monitoring</h2>
   <p>Monitoring is available at two levels: the Nebius Cloud dashboard (infrastructure-level GPU/CPU/network metrics) and Grafana deployed by Soperator (cluster health, job timelines, NFS I/O, node metrics).</p>
 
   <h3>Nebius Cloud Dashboard</h3>
@@ -518,9 +578,9 @@ terraform init && terraform apply
   </div>
 </section>
 
-<!-- 6. Profiler -->
+<!-- 7. Profiler -->
 <section id="profiler">
-  <h2><span class="step-num">6</span>PyTorch Profiler Analysis</h2>
+  <h2><span class="step-num">7</span>PyTorch Profiler Analysis</h2>
   <p>A dedicated 1-epoch profiling run (steps 10-20) captures kernel execution, operator timings, memory allocation, and communication patterns. Visualized in TensorBoard via the PyTorch Profiler plugin.</p>
 
   <div class="stats-grid">
@@ -572,9 +632,9 @@ terraform init && terraform apply
   </div>
 </section>
 
-<!-- 7. MLflow -->
+<!-- 8. MLflow -->
 <section id="mlflow">
-  <h2><span class="step-num">7</span>MLflow Experiment Tracking</h2>
+  <h2><span class="step-num">8</span>MLflow Experiment Tracking</h2>
   <p>MLflow runs on Kubernetes with PVC-backed storage. Slurm jobs connect via internal K8s DNS (<code>mlflow.mlflow.svc.cluster.local:5000</code>). Hyperparameters, loss, and learning rate are logged automatically from rank 0.</p>
 
   <div class="img-grid two">
@@ -589,9 +649,9 @@ terraform init && terraform apply
   </div>
 </section>
 
-<!-- 8. Inference -->
+<!-- 9. Inference -->
 <section id="inference">
-  <h2><span class="step-num">8</span>Inference Deployment</h2>
+  <h2><span class="step-num">9</span>Inference Deployment</h2>
   <p>Soperator workers are scaled to 0 to free GPUs. Two vLLM deployments serve the base and LoRA-adapted models in the <code>inference</code> namespace with LoadBalancer services.</p>
 
   <div class="img-grid two">
@@ -617,9 +677,9 @@ terraform init && terraform apply
   </div>
 </section>
 
-<!-- 9. Evaluation -->
+<!-- 10. Evaluation -->
 <section id="evaluation">
-  <h2><span class="step-num">9</span>Evaluation Results</h2>
+  <h2><span class="step-num">10</span>Evaluation Results</h2>
   <p>Three evaluation methods assess the fine-tuned model on 1,000 held-out samples (10% eval split, never seen during training).</p>
 
   <div class="result-highlight">
@@ -686,9 +746,9 @@ terraform init && terraform apply
   </div>
 </section>
 
-<!-- 10. Future Improvements -->
+<!-- 11. Future Improvements -->
 <section id="future">
-  <h2><span class="step-num">10</span>Future Improvements</h2>
+  <h2><span class="step-num">11</span>Future Improvements</h2>
   <p>Three areas were identified during the project that would improve the pipeline but were deferred due to time or cost constraints:</p>
   <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
     <div class="img-card" style="padding:1.5rem">
@@ -706,9 +766,9 @@ terraform init && terraform apply
   </div>
 </section>
 
-<!-- 11. Conclusion -->
+<!-- 12. Conclusion -->
 <section id="conclusion">
-  <h2><span class="step-num">11</span>Conclusion & Architectural Decisions</h2>
+  <h2><span class="step-num">12</span>Conclusion & Architectural Decisions</h2>
   <p>This project demonstrates an end-to-end pipeline for distributed LoRA fine-tuning on Nebius cloud infrastructure — from cluster provisioning through training, serving, and automated evaluation. Several architectural decisions shaped the design:</p>
 
   <div class="grid" style="grid-template-columns:1fr 1fr;gap:20px;display:grid;margin:20px 0">
@@ -744,9 +804,9 @@ terraform init && terraform apply
   </div>
 </section>
 
-<!-- 12. Repos -->
+<!-- 13. Repos -->
 <section id="repos">
-  <h2><span class="step-num">12</span>Repositories</h2>
+  <h2><span class="step-num">13</span>Repositories</h2>
   <table>
     <tr><th>Repository</th><th>Description</th></tr>
     <tr><td><a href="https://github.com/bhajian/training-task-soperator" style="color:var(--accent)">training-task-soperator</a></td><td>Training code, inference configs, evaluation notebook, this report</td></tr>
