@@ -711,21 +711,19 @@ terraform init && terraform apply
 <!-- 11. Future Improvements -->
 <section id="future">
   <h2><span class="step-num">11</span>Future Improvements</h2>
-  <p>Three areas were identified during the project that would improve the pipeline but were deferred due to time or cost constraints:</p>
-  <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
-    <div class="img-card" style="padding:1.5rem">
-      <h3 style="color:var(--accent);margin-top:0">Smarter Data Handling</h3>
-      <p style="font-size:0.95rem">The current pipeline concatenates all tokenized examples into one flat stream and reshapes it into fixed 2048-token chunks. This means a chunk boundary can cut an example mid-sentence — the model trains on a partial instruction or a truncated answer, which introduces noise. Two approaches would fix this: <strong>(1) padding</strong> — pad each example so it ends at a chunk boundary, wasting some tokens but guaranteeing no example is split; <strong>(2) attention masking</strong> — pack multiple examples per block but apply per-example attention masks so the model never attends across example boundaries.</p>
-    </div>
-    <div class="img-card" style="padding:1.5rem">
-      <h3 style="color:var(--accent);margin-top:0">Evaluation During Training</h3>
-      <p style="font-size:0.95rem">Currently evaluation only happens after training completes. Periodic validation loss and metric evaluation during training — logged to MLflow — would enable early stopping, catch overfitting sooner, and provide richer experiment comparison across runs.</p>
-    </div>
-    <div class="img-card" style="padding:1.5rem">
-      <h3 style="color:var(--accent);margin-top:0">Hyperparameter Sweep</h3>
-      <p style="font-size:0.95rem">The LoRA config (rank=16, alpha=32, lr=2e-4) was chosen based on common defaults. A systematic sweep over LoRA rank, learning rate, batch size, and number of epochs would likely yield better accuracy — but requires significant GPU time and cost on multi-GPU clusters.</p>
-    </div>
-  </div>
+  <p>Areas identified during the project that would improve the pipeline — deferred due to time or cost constraints:</p>
+  <table>
+    <tr><th style="width:30%">Gap</th><th>Description</th></tr>
+    <tr><td><strong>No eval_loss tracking</strong></td><td>train_loss and epoch_avg_loss only. No validation loop means you can't detect overfitting during training. Add a val_dataloader and log eval_loss every epoch.</td></tr>
+    <tr><td><strong>No resume from checkpoint</strong></td><td>If the job crashes, training restarts from epoch 0. Add --resume_from_checkpoint arg that loads adapter weights and skips to the right epoch/step.</td></tr>
+    <tr><td><strong>Epoch-only checkpointing</strong></td><td>With ~440 steps/epoch, a crash at step 430 loses 9+ minutes. Add save_steps logic inside the step loop.</td></tr>
+    <tr><td><strong>No config validation</strong></td><td>If a typo in the YAML sets lora_r='sixteen', the float() cast fails with a cryptic error. Add Pydantic or cerberus schema validation.</td></tr>
+    <tr><td><strong>No data versioning</strong></td><td>Dataset loaded from a JSON file with no hash or version. Running the same script with a modified dataset produces different results silently.</td></tr>
+    <tr><td><strong>No fault tolerance</strong></td><td>If one DDP process dies, the job fails entirely. torchrun --rdzv-backend=etcd enables elastic training and node failure recovery.</td></tr>
+    <tr><td><strong>MLP modules not targeted</strong></td><td>Only attention projections (q/k/v/o) are LoRA targets. Adding gate_proj, up_proj, down_proj typically improves quality substantially.</td></tr>
+    <tr><td><strong>No gradient accumulation</strong></td><td>Effective batch is only 4 sequences. Adding gradient_accumulation_steps=4 would reach effective batch 16 with no memory increase.</td></tr>
+    <tr><td><strong>Labels cross example boundaries</strong></td><td>Packed sequences concatenate multiple examples. The model trains to predict across EOS tokens, which can confuse the next example's instruction token. Fix: use attention masks that mask cross-example positions.</td></tr>
+  </table>
 </section>
 
 <!-- 12. Conclusion -->
