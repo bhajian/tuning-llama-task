@@ -279,8 +279,8 @@
   <!-- Soperator Architecture -->
   <h3>Soperator (Slurm-on-Kubernetes)</h3>
   <div class="img-card">
-    <img src="soperator%20architecture.jpg" alt="Soperator Architecture — Slurm operator, login/worker/controller pods, ConfigMaps, Secrets, PVCs" onclick="openLightbox(this)">
-    <div class="caption">Soperator internals — the slurm-operator watches the SlurmCluster CR and reconciles login, worker, and controller pods with shared NFS volumes, munge authentication, and Slurm config</div>
+    <img src="soperator%20architecture.jpg" alt="Soperator Architecture  -  Slurm operator, login/worker/controller pods, ConfigMaps, Secrets, PVCs" onclick="openLightbox(this)">
+    <div class="caption">Soperator internals  -  the slurm-operator watches the SlurmCluster CR and reconciles login, worker, and controller pods with shared NFS volumes, munge authentication, and Slurm config</div>
   </div>
 
   <!-- Training Architecture -->
@@ -302,8 +302,8 @@
   <!-- Inference Architecture -->
   <h3>Inference Architecture</h3>
   <div class="img-card">
-    <img src="inference-architecture.png" alt="Inference Architecture — Client, LoadBalancers, vLLM workers, NFS on Kubernetes" onclick="openLightbox(this)">
-    <div class="caption">Inference mode — client connects via LoadBalancers to vLLM on worker-0 (base) and worker-1 (LoRA), both reading models from NFS</div>
+    <img src="inference-architecture.png" alt="Inference Architecture  -  Client, LoadBalancers, vLLM workers, NFS on Kubernetes" onclick="openLightbox(this)">
+    <div class="caption">Inference mode  -  client connects via LoadBalancers to vLLM on worker-0 (base) and worker-1 (LoRA), both reading models from NFS</div>
   </div>
 
   <!-- Evaluation Pipeline -->
@@ -312,15 +312,15 @@
     <text x="30" y="28" fill="#e6edf3" font-size="12" font-weight="600">Evaluation Pipeline (1,000 held-out samples)</text>
     <rect x="30" y="38" width="200" height="38" rx="4" fill="#161b22" stroke="#bc8cff"/>
     <text x="130" y="56" text-anchor="middle" fill="#bc8cff" font-size="10" font-weight="600">Claude Sonnet Judge</text>
-    <text x="130" y="70" text-anchor="middle" fill="#8b949e" font-size="9">Vertex AI · binary YES/NO</text>
+    <text x="130" y="70" text-anchor="middle" fill="#8b949e" font-size="9">Vertex AI - binary YES/NO</text>
 
     <rect x="250" y="38" width="150" height="38" rx="4" fill="#161b22" stroke="#58a6ff"/>
     <text x="325" y="56" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="600">ROUGE-L</text>
-    <text x="325" y="70" text-anchor="middle" fill="#8b949e" font-size="9">Surface similarity · CPU</text>
+    <text x="325" y="70" text-anchor="middle" fill="#8b949e" font-size="9">Surface similarity - CPU</text>
 
     <rect x="420" y="38" width="150" height="38" rx="4" fill="#161b22" stroke="#58a6ff"/>
     <text x="495" y="56" text-anchor="middle" fill="#58a6ff" font-size="10" font-weight="600">BERTScore</text>
-    <text x="495" y="70" text-anchor="middle" fill="#8b949e" font-size="9">Semantic similarity · CPU</text>
+    <text x="495" y="70" text-anchor="middle" fill="#8b949e" font-size="9">Semantic similarity - CPU</text>
 
     <rect x="590" y="38" width="150" height="38" rx="4" fill="#161b22" stroke="#30363d"/>
     <text x="665" y="56" text-anchor="middle" fill="#e6edf3" font-size="10">Throughput</text>
@@ -386,7 +386,7 @@ terraform init && terraform apply
   <div class="img-grid">
     <div class="img-card">
       <img src="0.png" alt="GPU verification" onclick="openLightbox(this)">
-      <div class="caption">nvidia-smi output from both worker nodes — 2x NVIDIA L40S (48 GB each), CUDA 12.8, with NCCL network verification</div>
+      <div class="caption">nvidia-smi output from both worker nodes  -  2x NVIDIA L40S (48 GB each), CUDA 12.8, with NCCL network verification</div>
     </div>
   </div>
 </section>
@@ -435,17 +435,17 @@ terraform init && terraform apply
 
   <div class="result-highlight">
     <h3>Verdict: Ready to Train</h3>
-    <p style="color: var(--text); margin-bottom: 0;">Peak bus bandwidth of <strong>0.85 GB/s</strong> (~6.8 Gbps) is consistent with TCP socket transport over Ethernet. At the LoRA gradient size (~50 MB), each all-reduce takes <strong>~60 ms</strong> — negligible compared to the seconds-long forward/backward pass. Zero data errors across all message sizes confirm the NCCL data path is correct. The bandwidth plateaus at 8 MB and stays flat through 512 MB, indicating the link is fully saturated with no fragmentation or throttling issues.</p>
+    <p style="color: var(--text); margin-bottom: 0;">Peak bus bandwidth of <strong>0.85 GB/s</strong> (~6.8 Gbps) is consistent with TCP socket transport over Ethernet. At the LoRA gradient size (~50 MB), each all-reduce takes <strong>~60 ms</strong>  -  negligible compared to the seconds-long forward/backward pass. Zero data errors across all message sizes confirm the NCCL data path is correct. The bandwidth plateaus at 8 MB and stays flat through 512 MB, indicating the link is fully saturated with no fragmentation or throttling issues.</p>
   </div>
 
   <div class="img-grid two">
     <div class="img-card">
       <img src="nccl-test-info.png" alt="NCCL test initialization" onclick="openLightbox(this)">
-      <div class="caption">NCCL test initialization — 2 nodes (worker-0, worker-1), 1 GPU each (L40S), NCCL over TCP/Socket with 2 channels, ring topology</div>
+      <div class="caption">NCCL test initialization  -  2 nodes (worker-0, worker-1), 1 GPU each (L40S), NCCL over TCP/Socket with 2 channels, ring topology</div>
     </div>
     <div class="img-card">
       <img src="nccl-test.png" alt="NCCL bandwidth results" onclick="openLightbox(this)">
-      <div class="caption">all_reduce_perf results — bandwidth sweep from 8B to 512MB, peak bus bandwidth 0.85 GB/s, average 0.32 GB/s, zero errors</div>
+      <div class="caption">all_reduce_perf results  -  bandwidth sweep from 8B to 512MB, peak bus bandwidth 0.85 GB/s, average 0.32 GB/s, zero errors</div>
     </div>
   </div>
 </section>
@@ -473,11 +473,11 @@ terraform init && terraform apply
   <div class="img-grid two">
     <div class="img-card">
       <img src="1.png" alt="Training logs" onclick="openLightbox(this)">
-      <div class="caption">Slurm job submission — NCCL initialization across 2 nodes, dataset packing, and training loss over epochs</div>
+      <div class="caption">Slurm job submission  -  NCCL initialization across 2 nodes, dataset packing, and training loss over epochs</div>
     </div>
     <div class="img-card">
       <img src="7.png" alt="Job completion" onclick="openLightbox(this)">
-      <div class="caption">Slurm job accounting — Job 35 completed in 1:04:01 across both workers</div>
+      <div class="caption">Slurm job accounting  -  Job 35 completed in 1:04:01 across both workers</div>
     </div>
   </div>
 </section>
@@ -502,11 +502,11 @@ terraform init && terraform apply
   <div class="img-grid two">
     <div class="img-card">
       <img src="6.png" alt="GPU utilization closeup" onclick="openLightbox(this)">
-      <div class="caption">GPU utilization close-up — both GPUs at 97-100% with brief periodic dips</div>
+      <div class="caption">GPU utilization close-up  -  both GPUs at 97-100% with brief periodic dips</div>
     </div>
     <div class="img-card">
       <img src="3hrs.png" alt="3-hour GPU view" onclick="openLightbox(this)">
-      <div class="caption">3-hour GPU view — full training run duration with sustained utilization</div>
+      <div class="caption">3-hour GPU view  -  full training run duration with sustained utilization</div>
     </div>
   </div>
 
@@ -517,7 +517,7 @@ terraform init && terraform apply
     </div>
     <div class="img-card">
       <img src="rx-tx.png" alt="PCIe RX/TX" onclick="openLightbox(this)">
-      <div class="caption">PCIe RX/TX bandwidth during training — periodic pattern from NCCL collective operations</div>
+      <div class="caption">PCIe RX/TX bandwidth during training  -  periodic pattern from NCCL collective operations</div>
     </div>
   </div>
 
@@ -527,15 +527,15 @@ terraform init && terraform apply
   <div class="img-grid three">
     <div class="img-card">
       <img src="graphana1.png" alt="Grafana Cluster Health" onclick="openLightbox(this)">
-      <div class="caption">Cluster Health & Overview — job timeline, running/completed/failed jobs, per-user breakdown</div>
+      <div class="caption">Cluster Health & Overview  -  job timeline, running/completed/failed jobs, per-user breakdown</div>
     </div>
     <div class="img-card">
       <img src="graphana2.png" alt="Grafana NFS" onclick="openLightbox(this)">
-      <div class="caption">NFS dashboard — disk read/write throughput, NFSd packets, cache stats, RPC operations</div>
+      <div class="caption">NFS dashboard  -  disk read/write throughput, NFSd packets, cache stats, RPC operations</div>
     </div>
     <div class="img-card">
       <img src="graphana3.png" alt="Grafana Node Exporter" onclick="openLightbox(this)">
-      <div class="caption">Node Exporter — CPU usage, memory, network traffic, disk space per node</div>
+      <div class="caption">Node Exporter  -  CPU usage, memory, network traffic, disk space per node</div>
     </div>
   </div>
 </section>
@@ -567,29 +567,29 @@ terraform init && terraform apply
   <div class="img-grid two">
     <div class="img-card">
       <img src="profiler.png" alt="Profiler overview" onclick="openLightbox(this)">
-      <div class="caption">Profiler overview — GPU summary (97.91% utilization, 95.8% SM efficiency), execution breakdown, step time chart</div>
+      <div class="caption">Profiler overview  -  GPU summary (97.91% utilization, 95.8% SM efficiency), execution breakdown, step time chart</div>
     </div>
     <div class="img-card">
       <img src="profiler-operator.png" alt="Operator view" onclick="openLightbox(this)">
-      <div class="caption">Operator view — top operators by host self time and host total time</div>
+      <div class="caption">Operator view  -  top operators by host self time and host total time</div>
     </div>
   </div>
 
   <div class="img-grid two">
     <div class="img-card">
       <img src="profiler-gpu-kernel.png" alt="GPU kernel view" onclick="openLightbox(this)">
-      <div class="caption">GPU Kernel view — CUDA kernels sorted by total time, with tensor core utilization breakdown</div>
+      <div class="caption">GPU Kernel view  -  CUDA kernels sorted by total time, with tensor core utilization breakdown</div>
     </div>
     <div class="img-card">
       <img src="memory.png" alt="Memory view" onclick="openLightbox(this)">
-      <div class="caption">Memory view — peak usage 24,740 MB with allocation/deallocation timeline</div>
+      <div class="caption">Memory view  -  peak usage 24,740 MB with allocation/deallocation timeline</div>
     </div>
   </div>
 
   <div class="img-grid">
     <div class="img-card">
       <img src="distributed view.png" alt="Distributed view" onclick="openLightbox(this)">
-      <div class="caption">Distributed view — computation/communication overlap; NCCL operations: 10 broadcast calls, 40 all_reduce calls (667 ms total latency)</div>
+      <div class="caption">Distributed view  -  computation/communication overlap; NCCL operations: 10 broadcast calls, 40 all_reduce calls (667 ms total latency)</div>
     </div>
   </div>
 </section>
@@ -602,11 +602,11 @@ terraform init && terraform apply
   <div class="img-grid two">
     <div class="img-card">
       <img src="mlflow.png" alt="MLflow experiments" onclick="openLightbox(this)">
-      <div class="caption">MLflow experiments dashboard — llama-3.1-8b-lora experiment with completed 1.1-hour training run</div>
+      <div class="caption">MLflow experiments dashboard  -  llama-3.1-8b-lora experiment with completed 1.1-hour training run</div>
     </div>
     <div class="img-card">
       <img src="mlflow-metrics.png" alt="MLflow metrics" onclick="openLightbox(this)">
-      <div class="caption">MLflow model metrics — epoch_avg_loss (decreasing across 5 epochs), learning rate (cosine decay), per-step train_loss</div>
+      <div class="caption">MLflow model metrics  -  epoch_avg_loss (decreasing across 5 epochs), learning rate (cosine decay), per-step train_loss</div>
     </div>
   </div>
 </section>
@@ -619,22 +619,22 @@ terraform init && terraform apply
   <div class="img-grid two">
     <div class="img-card">
       <img src="8.png" alt="GPU handover" onclick="openLightbox(this)">
-      <div class="caption">GPU handover — suspending FluxCD, scaling Soperator workers to 0, verifying GPU availability on both nodes</div>
+      <div class="caption">GPU handover  -  suspending FluxCD, scaling Soperator workers to 0, verifying GPU availability on both nodes</div>
     </div>
     <div class="img-card">
       <img src="9.png" alt="vLLM deployment" onclick="openLightbox(this)">
-      <div class="caption">vLLM deployment — base and LoRA model pods running, vLLM 0.8.2 loading Llama 3.1 8B</div>
+      <div class="caption">vLLM deployment  -  base and LoRA model pods running, vLLM 0.8.2 loading Llama 3.1 8B</div>
     </div>
   </div>
 
   <div class="img-grid two">
     <div class="img-card">
       <img src="10.png" alt="Evaluation notebook" onclick="openLightbox(this)">
-      <div class="caption">Evaluation notebook — Jupyter configuration, vLLM service endpoints, and smoke test comparing both models</div>
+      <div class="caption">Evaluation notebook  -  Jupyter configuration, vLLM service endpoints, and smoke test comparing both models</div>
     </div>
     <div class="img-card">
       <img src="inference-utilization.png" alt="Inference GPU" onclick="openLightbox(this)">
-      <div class="caption">GPU utilization during inference — bursty pattern while serving evaluation queries via vLLM</div>
+      <div class="caption">GPU utilization during inference  -  bursty pattern while serving evaluation queries via vLLM</div>
     </div>
   </div>
 </section>
@@ -646,7 +646,7 @@ terraform init && terraform apply
 
   <div class="result-highlight">
     <h3>Key Results</h3>
-    <p style="color: var(--text); margin-bottom: 0;">The LoRA fine-tuned model achieves <strong>83.5% accuracy</strong> vs the base model's <strong>49.4%</strong> — a <strong>+34.1 percentage point improvement</strong> as judged by Claude Sonnet. Automated metrics confirm the improvement: ROUGE-L doubles from 0.21 to 0.43, and BERTScore F1 improves from 0.84 to 0.91.</p>
+    <p style="color: var(--text); margin-bottom: 0;">The LoRA fine-tuned model achieves <strong>83.5% accuracy</strong> vs the base model's <strong>49.4%</strong>  -  a <strong>+34.1 percentage point improvement</strong> as judged by Claude Sonnet. Automated metrics confirm the improvement: ROUGE-L doubles from 0.21 to 0.43, and BERTScore F1 improves from 0.84 to 0.91.</p>
   </div>
 
   <div class="stats-grid">
@@ -688,22 +688,22 @@ terraform init && terraform apply
   <div class="img-grid two">
     <div class="img-card">
       <img src="accuracy_comparison.png" alt="Accuracy comparison" onclick="openLightbox(this)">
-      <div class="caption">Judge accuracy and per-sample agreement — LoRA correct on 375 samples where base failed, only 34 regressions</div>
+      <div class="caption">Judge accuracy and per-sample agreement  -  LoRA correct on 375 samples where base failed, only 34 regressions</div>
     </div>
     <div class="img-card">
       <img src="confusion_matrix.png" alt="Confusion matrix" onclick="openLightbox(this)">
-      <div class="caption">Confusion matrix — 460 both correct, 375 LoRA-only correct, 34 base-only correct, 131 both wrong</div>
+      <div class="caption">Confusion matrix  -  460 both correct, 375 LoRA-only correct, 34 base-only correct, 131 both wrong</div>
     </div>
   </div>
 
   <div class="img-grid two">
     <div class="img-card">
       <img src="automated_metrics.png" alt="Automated metrics" onclick="openLightbox(this)">
-      <div class="caption">ROUGE-L and BERTScore distributions — LoRA shows clear shift rightward on both metrics</div>
+      <div class="caption">ROUGE-L and BERTScore distributions  -  LoRA shows clear shift rightward on both metrics</div>
     </div>
     <div class="img-card">
       <img src="throughput_analysis.png" alt="Throughput analysis" onclick="openLightbox(this)">
-      <div class="caption">Throughput and latency distributions — LoRA has lower per-token throughput but much lower latency due to concise outputs</div>
+      <div class="caption">Throughput and latency distributions  -  LoRA has lower per-token throughput but much lower latency due to concise outputs</div>
     </div>
   </div>
 </section>
@@ -711,7 +711,7 @@ terraform init && terraform apply
 <!-- 11. Future Improvements -->
 <section id="future">
   <h2><span class="step-num">11</span>Future Improvements</h2>
-  <p>Areas identified during the project that would improve the pipeline — deferred due to time or cost constraints:</p>
+  <p>Areas identified during the project that would improve the pipeline  -  deferred due to time or cost constraints:</p>
   <table>
     <tr><th style="width:30%">Gap</th><th>Description</th></tr>
     <tr><td><strong>No eval_loss tracking</strong></td><td>train_loss and epoch_avg_loss only. No validation loop means you can't detect overfitting during training. Add a val_dataloader and log eval_loss every epoch.</td></tr>
@@ -729,38 +729,38 @@ terraform init && terraform apply
 <!-- 12. Conclusion -->
 <section id="conclusion">
   <h2><span class="step-num">12</span>Conclusion & Architectural Decisions</h2>
-  <p>This project demonstrates an end-to-end pipeline for distributed LoRA fine-tuning on Nebius cloud infrastructure — from cluster provisioning through training, serving, and automated evaluation. Several architectural decisions shaped the design:</p>
+  <p>This project demonstrates an end-to-end pipeline for distributed LoRA fine-tuning on Nebius cloud infrastructure  -  from cluster provisioning through training, serving, and automated evaluation. Several architectural decisions shaped the design:</p>
 
   <div class="grid" style="grid-template-columns:1fr 1fr;gap:20px;display:grid;margin:20px 0">
     <div class="img-card" style="padding:1.5rem">
       <h3 style="color:var(--accent);margin-top:0">Why Soperator (Slurm-on-K8s)?</h3>
-      <p style="font-size:0.95rem">Running Slurm inside Kubernetes via Soperator provides the job scheduling semantics that ML workloads need (multi-node GPU allocation, job queuing, gang scheduling) without leaving the Kubernetes ecosystem. This avoids managing bare-metal Slurm clusters while keeping Kubernetes-native tooling for everything else — MLflow, TensorBoard, vLLM inference, and Grafana all deploy as standard K8s resources alongside Slurm workers.</p>
+      <p style="font-size:0.95rem">Running Slurm inside Kubernetes via Soperator provides the job scheduling semantics that ML workloads need (multi-node GPU allocation, job queuing, gang scheduling) without leaving the Kubernetes ecosystem. This avoids managing bare-metal Slurm clusters while keeping Kubernetes-native tooling for everything else  -  MLflow, TensorBoard, vLLM inference, and Grafana all deploy as standard K8s resources alongside Slurm workers.</p>
     </div>
     <div class="img-card" style="padding:1.5rem">
       <h3 style="color:var(--accent);margin-top:0">Why LoRA Instead of Full Fine-Tuning?</h3>
-      <p style="font-size:0.95rem">With only 2x L40S (48 GB each), full fine-tuning of even an 8B model would require aggressive sharding (FSDP/DeepSpeed ZeRO-3) and would be impractically slow over Ethernet. LoRA reduces trainable parameters to ~52 MB, making DDP over TCP viable — each GPU holds the full frozen model plus a small adapter, and only adapter gradients are communicated via NCCL all-reduce. This keeps the Ethernet interconnect from becoming a bottleneck.</p>
+      <p style="font-size:0.95rem">With only 2x L40S (48 GB each), full fine-tuning of even an 8B model would require aggressive sharding (FSDP/DeepSpeed ZeRO-3) and would be impractically slow over Ethernet. LoRA reduces trainable parameters to ~52 MB, making DDP over TCP viable  -  each GPU holds the full frozen model plus a small adapter, and only adapter gradients are communicated via NCCL all-reduce. This keeps the Ethernet interconnect from becoming a bottleneck.</p>
     </div>
     <div class="img-card" style="padding:1.5rem">
       <h3 style="color:var(--accent);margin-top:0">Why DDP Over Ethernet (Not FSDP)?</h3>
-      <p style="font-size:0.95rem">The cluster uses standard Ethernet, not InfiniBand. With LoRA, the all-reduce payload is tiny (~52 MB per step), so DDP communication overhead is negligible even over TCP. FSDP would shard model parameters across nodes, requiring constant high-bandwidth parameter gathering — exactly the pattern where Ethernet becomes a bottleneck. DDP with LoRA is the natural fit for Ethernet-connected GPU clusters.</p>
+      <p style="font-size:0.95rem">The cluster uses standard Ethernet, not InfiniBand. With LoRA, the all-reduce payload is tiny (~52 MB per step), so DDP communication overhead is negligible even over TCP. FSDP would shard model parameters across nodes, requiring constant high-bandwidth parameter gathering  -  exactly the pattern where Ethernet becomes a bottleneck. DDP with LoRA is the natural fit for Ethernet-connected GPU clusters.</p>
     </div>
     <div class="img-card" style="padding:1.5rem">
       <h3 style="color:var(--accent);margin-top:0">Why Shared GPU Ownership?</h3>
-      <p style="font-size:0.95rem">With only 2 GPUs, dedicating separate GPUs to training and inference isn't possible. Instead, the system switches modes: Soperator workers hold GPUs during training, then scale to 0 to release them for vLLM inference pods. FluxCD reconciliation must be suspended during inference to prevent the slurm-operator from respawning workers. This is a deliberate trade-off — operational simplicity over running both simultaneously — appropriate for a 2-GPU demo cluster.</p>
+      <p style="font-size:0.95rem">With only 2 GPUs, dedicating separate GPUs to training and inference isn't possible. Instead, the system switches modes: Soperator workers hold GPUs during training, then scale to 0 to release them for vLLM inference pods. FluxCD reconciliation must be suspended during inference to prevent the slurm-operator from respawning workers. This is a deliberate trade-off  -  operational simplicity over running both simultaneously  -  appropriate for a 2-GPU demo cluster.</p>
     </div>
     <div class="img-card" style="padding:1.5rem">
       <h3 style="color:var(--accent);margin-top:0">Why Config-Driven Training?</h3>
-      <p style="font-size:0.95rem">All hyperparameters live in YAML config files rather than being hardcoded or passed as CLI arguments. This makes experiments reproducible — each run's resolved config is saved alongside the adapter — and enables easy model switching. The same training script handles Llama 3.1 8B and Qwen 2.5 14B simply by pointing to a different config file, with no code changes required.</p>
+      <p style="font-size:0.95rem">All hyperparameters live in YAML config files rather than being hardcoded or passed as CLI arguments. This makes experiments reproducible  -  each run's resolved config is saved alongside the adapter  -  and enables easy model switching. The same training script handles Llama 3.1 8B and Qwen 2.5 14B simply by pointing to a different config file, with no code changes required.</p>
     </div>
     <div class="img-card" style="padding:1.5rem">
       <h3 style="color:var(--accent);margin-top:0">Why Claude Sonnet as Judge?</h3>
-      <p style="font-size:0.95rem">Automated metrics (ROUGE-L, BERTScore) measure surface and semantic similarity but cannot assess whether a response actually answers the instruction correctly. Using Claude Sonnet via Vertex AI as an impartial binary judge provides a more meaningful accuracy signal — and avoids the circular problem of using the same model family for both generation and evaluation. The 90/10 train/eval split ensures the judge evaluates on samples never seen during training.</p>
+      <p style="font-size:0.95rem">Automated metrics (ROUGE-L, BERTScore) measure surface and semantic similarity but cannot assess whether a response actually answers the instruction correctly. Using Claude Sonnet via Vertex AI as an impartial binary judge provides a more meaningful accuracy signal  -  and avoids the circular problem of using the same model family for both generation and evaluation. The 90/10 train/eval split ensures the judge evaluates on samples never seen during training.</p>
     </div>
   </div>
 
   <div class="result-highlight">
     <h3>Key Takeaways</h3>
-    <p style="color: var(--text); margin-bottom: 0;">LoRA fine-tuning on a 2-node Ethernet cluster is practical and effective: 97.9% GPU utilization, 1-hour training time, and a +34.1% accuracy improvement over the base model. The Soperator + Kubernetes architecture provides a clean separation between training (Slurm) and inference (K8s Deployments) while sharing the same GPU pool. The pipeline generalizes to larger models — Qwen 2.5 14B trains on the same cluster with only a config change.</p>
+    <p style="color: var(--text); margin-bottom: 0;">LoRA fine-tuning on a 2-node Ethernet cluster is practical and effective: 97.9% GPU utilization, 1-hour training time, and a +34.1% accuracy improvement over the base model. The Soperator + Kubernetes architecture provides a clean separation between training (Slurm) and inference (K8s Deployments) while sharing the same GPU pool. The pipeline generalizes to larger models  -  Qwen 2.5 14B trains on the same cluster with only a config change.</p>
   </div>
 </section>
 
